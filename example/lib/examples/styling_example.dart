@@ -60,11 +60,7 @@ class _StylingExampleState extends State<StylingExample> {
             const DropletRefractionStyle.strong(),
           ][_preset],
           theme: _style == 1
-              ? LiquidTabBarTheme.adaptive(context).copyWith(
-                  barStyle: LiquidBarStyle.glossy(
-                    brightness: Theme.of(context).brightness,
-                  ),
-                )
+              ? LiquidTabBarTheme(barStyle: LiquidBarStyle.glossy())
               : _style == 2
                   ? LiquidTabBarTheme.adaptive(context).copyWith(
                       activeColor: const Color(0xFF9D572D),

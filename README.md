@@ -316,8 +316,10 @@ icons and labels underneath the moving lens; its RGB dispersion creates fine
 color fringes at high contrast edges. The blur fallback keeps the same surface
 palette and selection styling, while high-contrast mode uses the opaque tier.
 
-Use `const LiquidTabBarTheme()` to force light styling or
-`const LiquidTabBarTheme.dark()` to force dark styling. `adaptive(context)` also
+`const LiquidTabBarTheme()` follows the ambient light/dark brightness, including
+when only some style fields are supplied. Use
+`const LiquidTabBarTheme(brightness: Brightness.light)` to pin light styling or
+`const LiquidTabBarTheme.dark()` to pin dark styling. `adaptive(context)` also
 uses your app's primary color for the selected icon and label.
 
 ### Material Tiers
@@ -335,16 +337,13 @@ uses your app's primary color for the selected icon and label.
 
 #### Glossy capsule
 
-Added optional `LiquidBarStyle.glossy(brightness: ...)` for light and dark modes.
+`LiquidBarStyle.glossy()` follows the ambient light/dark brightness. Passing
+`brightness:` pins a specific glossy palette.
 
 Opt into a brighter neutral bevel, luminous tint, and clearer backdrop colors:
 
 ```dart
-theme: LiquidTabBarTheme.adaptive(context).copyWith(
-  barStyle: LiquidBarStyle.glossy(
-    brightness: Theme.of(context).brightness,
-  ),
-),
+theme: LiquidTabBarTheme(barStyle: LiquidBarStyle.glossy()),
 ```
 
 The preset styles the bar and separate action buttons with matching light/dark

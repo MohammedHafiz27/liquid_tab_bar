@@ -858,8 +858,14 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     _updateListenable();
   }
 
-  LiquidTabBarTheme get _theme =>
-      widget.theme ?? LiquidTabBarTheme.adaptive(context);
+  LiquidTabBarTheme get _theme {
+    final hasTheme = context.findAncestorWidgetOfExactType<Theme>() != null;
+    final ambient = hasTheme ? Theme.of(context) : null;
+    return (widget.theme ?? const LiquidTabBarTheme()).resolve(
+      ambient?.brightness ?? MediaQuery.platformBrightnessOf(context),
+      primary: ambient?.colorScheme.primary,
+    );
+  }
 
   @override
   void didUpdateWidget(LiquidTabBar old) {

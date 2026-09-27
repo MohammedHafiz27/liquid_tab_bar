@@ -670,25 +670,67 @@ class LiquidDropletSurfaceStyle {
 }
 
 /// Canonical surface styling for the tab bar across its material tiers.
+enum _LiquidBarStyleKind { normal, glossy, fixed }
+
 @immutable
 class LiquidBarStyle {
   const LiquidBarStyle({
-    this.glass = lightGlass,
-    this.blurTint = const Color(0x8FFFFFFF),
-    this.blurSheenTop = const Color(0x08FFFFFF),
-    this.blurSheenBottom = const Color(0x02FFFFFF),
-    this.blurEdge = const Color(0x30FFFFFF),
-    this.opaqueFill = const Color(0xFFFFFFFF),
-    this.opaqueEdge = const Color(0xFFE6E5E2),
-    this.shadow = lightShadow,
-  });
+    GlassStyle? glass,
+    Color? blurTint,
+    Color? blurSheenTop,
+    Color? blurSheenBottom,
+    Color? blurEdge,
+    Color? opaqueFill,
+    Color? opaqueEdge,
+    List<BoxShadow>? shadow,
+  })  : glass = glass ?? lightGlass,
+        blurTint = blurTint ?? const Color(0x8FFFFFFF),
+        blurSheenTop = blurSheenTop ?? const Color(0x08FFFFFF),
+        blurSheenBottom = blurSheenBottom ?? const Color(0x02FFFFFF),
+        blurEdge = blurEdge ?? const Color(0x30FFFFFF),
+        opaqueFill = opaqueFill ?? const Color(0xFFFFFFFF),
+        opaqueEdge = opaqueEdge ?? const Color(0xFFE6E5E2),
+        shadow = shadow ?? lightShadow,
+        _kind = glass == null &&
+                blurTint == null &&
+                blurSheenTop == null &&
+                blurSheenBottom == null &&
+                blurEdge == null &&
+                opaqueFill == null &&
+                opaqueEdge == null &&
+                shadow == null
+            ? _LiquidBarStyleKind.normal
+            : _LiquidBarStyleKind.fixed;
+
+  LiquidBarStyle._adaptiveGlossy(LiquidBarStyle lightStyle)
+      : glass = lightStyle.glass,
+        blurTint = lightStyle.blurTint,
+        blurSheenTop = lightStyle.blurSheenTop,
+        blurSheenBottom = lightStyle.blurSheenBottom,
+        blurEdge = lightStyle.blurEdge,
+        opaqueFill = lightStyle.opaqueFill,
+        opaqueEdge = lightStyle.opaqueEdge,
+        shadow = lightStyle.shadow,
+        _kind = _LiquidBarStyleKind.glossy;
+
+  final _LiquidBarStyleKind _kind;
 
   /// A more transparent, polished capsule with a bright, neutral bevel.
   ///
   /// Applies to the bar and its separate actions in both shader and blur tiers.
-  /// Pass the surrounding theme's brightness for matching light/dark styling.
+  /// With no [brightness], the bar resolves this preset from the ambient theme
+  /// whenever it builds. Pass [brightness] to pin a specific palette.
   /// Opaque accessibility surfaces are preserved from the base palette.
-  factory LiquidBarStyle.glossy({Brightness brightness = Brightness.light}) {
+  factory LiquidBarStyle.glossy({Brightness? brightness}) {
+    if (brightness == null) {
+      return LiquidBarStyle._adaptiveGlossy(
+        _glossyFor(Brightness.light),
+      );
+    }
+    return _glossyFor(brightness);
+  }
+
+  static LiquidBarStyle _glossyFor(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final base = isDark ? dark : light;
     final tint = isDark ? const Color(0x661C1C1E) : const Color(0x80FFFFFF);
@@ -707,6 +749,15 @@ class LiquidBarStyle {
       blurEdge: Color(isDark ? 0x38FFFFFF : 0xCCFFFFFF),
     );
   }
+
+  /// Resolves an unpinned Normal or Glossy preset for [brightness]. Custom
+  /// styles and presets created with an explicit brightness retain their values.
+  LiquidBarStyle resolve(Brightness brightness) => switch (_kind) {
+        _LiquidBarStyleKind.normal =>
+          brightness == Brightness.dark ? dark : light,
+        _LiquidBarStyleKind.glossy => _glossyFor(brightness),
+        _LiquidBarStyleKind.fixed => this,
+      };
 
   static const GlassStyle lightGlass = GlassStyle(
     rim: 5,
@@ -760,7 +811,7 @@ class LiquidBarStyle {
     BoxShadow(color: Color(0x18000000), offset: Offset(0, 2), blurRadius: 8),
   ];
 
-  static const LiquidBarStyle light = LiquidBarStyle();
+  static const LiquidBarStyle light = LiquidBarStyle(glass: lightGlass);
   static const LiquidBarStyle dark = LiquidBarStyle(
     glass: darkGlass,
     blurTint: Color(0x8F1C1C1E),
@@ -790,17 +841,28 @@ class LiquidBarStyle {
     Color? opaqueFill,
     Color? opaqueEdge,
     List<BoxShadow>? shadow,
-  }) =>
-      LiquidBarStyle(
-        glass: glass ?? this.glass,
-        blurTint: blurTint ?? this.blurTint,
-        blurSheenTop: blurSheenTop ?? this.blurSheenTop,
-        blurSheenBottom: blurSheenBottom ?? this.blurSheenBottom,
-        blurEdge: blurEdge ?? this.blurEdge,
-        opaqueFill: opaqueFill ?? this.opaqueFill,
-        opaqueEdge: opaqueEdge ?? this.opaqueEdge,
-        shadow: shadow ?? this.shadow,
-      );
+  }) {
+    if (glass == null &&
+        blurTint == null &&
+        blurSheenTop == null &&
+        blurSheenBottom == null &&
+        blurEdge == null &&
+        opaqueFill == null &&
+        opaqueEdge == null &&
+        shadow == null) {
+      return this;
+    }
+    return LiquidBarStyle(
+      glass: glass ?? this.glass,
+      blurTint: blurTint ?? this.blurTint,
+      blurSheenTop: blurSheenTop ?? this.blurSheenTop,
+      blurSheenBottom: blurSheenBottom ?? this.blurSheenBottom,
+      blurEdge: blurEdge ?? this.blurEdge,
+      opaqueFill: opaqueFill ?? this.opaqueFill,
+      opaqueEdge: opaqueEdge ?? this.opaqueEdge,
+      shadow: shadow ?? this.shadow,
+    );
+  }
 
   static LiquidBarStyle lerp(LiquidBarStyle a, LiquidBarStyle b, double t) =>
       LiquidBarStyle(
@@ -817,6 +879,7 @@ class LiquidBarStyle {
   @override
   bool operator ==(Object other) =>
       other is LiquidBarStyle &&
+      other._kind == _kind &&
       other.glass == glass &&
       other.blurTint == blurTint &&
       other.blurSheenTop == blurSheenTop &&
@@ -836,6 +899,7 @@ class LiquidBarStyle {
         opaqueFill,
         opaqueEdge,
         Object.hashAll(shadow),
+        _kind,
       );
 
   @override
@@ -843,9 +907,9 @@ class LiquidBarStyle {
       'opaqueFill: $opaqueFill, shadow: $shadow)';
 }
 
-/// Every colour and number a [LiquidTabBar] draws with. The defaults are the
-/// white glass the bar was measured against iOS 26 with; an app usually sets
-/// [activeColor], [inactiveColor] and [labelStyle] and leaves the rest.
+/// Every colour and number a [LiquidTabBar] draws with. Unspecified palette
+/// fields follow the ambient brightness when the bar builds; explicitly
+/// supplied fields keep their values.
 class LiquidTabBarTheme {
   /// Default spring physics for fold and lens motions.
   static const SpringDescription defaultSpring = SpringDescription(
@@ -858,19 +922,32 @@ class LiquidTabBarTheme {
   static const Duration defaultRelax = Duration(milliseconds: 120);
 
   const LiquidTabBarTheme({
-    this.activeColor = const Color(0xFF007AFF),
-    this.inactiveColor = const Color(0xFF1C1C1E),
+    Color? activeColor,
+    Color? inactiveColor,
     this.labelStyle = const TextStyle(),
-    this.barStyle = LiquidBarStyle.light,
-    this.actionStyle = LiquidTabActionStyle.light,
-    this.dropletSurfaceStyle = LiquidDropletSurfaceStyle.light,
-    this.badgeStyle = const LiquidBadgeStyle(),
+    LiquidBarStyle? barStyle,
+    LiquidTabActionStyle? actionStyle,
+    LiquidDropletSurfaceStyle? dropletSurfaceStyle,
+    LiquidBadgeStyle? badgeStyle,
     this.dropletRefraction = const DropletRefractionStyle(),
     this.spring = defaultSpring,
     this.relax = defaultRelax,
     this.foldedShape = LiquidFoldedShape.circle,
     this.maxWidth,
-  });
+    this.brightness,
+  })  : activeColor = activeColor ?? const Color(0xFF007AFF),
+        inactiveColor = inactiveColor ?? const Color(0xFF1C1C1E),
+        barStyle = barStyle ?? LiquidBarStyle.light,
+        actionStyle = actionStyle ?? LiquidTabActionStyle.light,
+        dropletSurfaceStyle =
+            dropletSurfaceStyle ?? LiquidDropletSurfaceStyle.light,
+        badgeStyle = badgeStyle ?? const LiquidBadgeStyle(),
+        _autoActiveColor = activeColor == null,
+        _autoInactiveColor = inactiveColor == null,
+        _autoBarStyle = barStyle == null,
+        _autoActionStyle = actionStyle == null,
+        _autoDropletSurfaceStyle = dropletSurfaceStyle == null,
+        _autoBadgeStyle = badgeStyle == null;
 
   /// A dark glass theme preset for dark mode backgrounds.
   const LiquidTabBarTheme.dark({
@@ -886,7 +963,40 @@ class LiquidTabBarTheme {
     this.relax = defaultRelax,
     this.foldedShape = LiquidFoldedShape.circle,
     this.maxWidth,
-  });
+  })  : brightness = Brightness.dark,
+        _autoActiveColor = false,
+        _autoInactiveColor = false,
+        _autoBarStyle = false,
+        _autoActionStyle = false,
+        _autoDropletSurfaceStyle = false,
+        _autoBadgeStyle = false;
+
+  const LiquidTabBarTheme._fromFields({
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.labelStyle,
+    required this.barStyle,
+    required this.actionStyle,
+    required this.dropletSurfaceStyle,
+    required this.badgeStyle,
+    required this.dropletRefraction,
+    required this.spring,
+    required this.relax,
+    required this.foldedShape,
+    required this.maxWidth,
+    required this.brightness,
+    required bool autoActiveColor,
+    required bool autoInactiveColor,
+    required bool autoBarStyle,
+    required bool autoActionStyle,
+    required bool autoDropletSurfaceStyle,
+    required bool autoBadgeStyle,
+  })  : _autoActiveColor = autoActiveColor,
+        _autoInactiveColor = autoInactiveColor,
+        _autoBarStyle = autoBarStyle,
+        _autoActionStyle = autoActionStyle,
+        _autoDropletSurfaceStyle = autoDropletSurfaceStyle,
+        _autoBadgeStyle = autoBadgeStyle;
 
   /// Automatically picks [LiquidTabBarTheme.dark] or [LiquidTabBarTheme] (light)
   /// matching the ambient app theme or platform brightness, using the app's
@@ -904,13 +1014,46 @@ class LiquidTabBarTheme {
       primary = null;
     }
 
-    final isDark = brightness == Brightness.dark;
-    if (isDark) {
-      return LiquidTabBarTheme.dark(
-        activeColor: primary ?? const Color(0xFFF2F2F7),
-      );
-    }
-    return LiquidTabBarTheme(activeColor: primary ?? const Color(0xFF007AFF));
+    return const LiquidTabBarTheme().resolve(brightness, primary: primary);
+  }
+
+  /// Uses [ambientBrightness] for fields the caller did not explicitly set.
+  /// [brightness] can pin a light or dark palette independently of the app.
+  LiquidTabBarTheme resolve(
+    Brightness ambientBrightness, {
+    Color? primary,
+  }) {
+    final effectiveBrightness = brightness ?? ambientBrightness;
+    final dark = effectiveBrightness == Brightness.dark;
+    final base =
+        dark ? const LiquidTabBarTheme.dark() : const LiquidTabBarTheme();
+    return LiquidTabBarTheme._fromFields(
+      activeColor: _autoActiveColor
+          ? (brightness == null ? primary : null) ?? base.activeColor
+          : activeColor,
+      inactiveColor: _autoInactiveColor ? base.inactiveColor : inactiveColor,
+      labelStyle: labelStyle,
+      barStyle: _autoBarStyle
+          ? (dark ? LiquidBarStyle.dark : LiquidBarStyle.light)
+          : barStyle.resolve(effectiveBrightness),
+      actionStyle: _autoActionStyle ? base.actionStyle : actionStyle,
+      dropletSurfaceStyle: _autoDropletSurfaceStyle
+          ? base.dropletSurfaceStyle
+          : dropletSurfaceStyle,
+      badgeStyle: _autoBadgeStyle ? base.badgeStyle : badgeStyle,
+      dropletRefraction: dropletRefraction,
+      spring: spring,
+      relax: relax,
+      foldedShape: foldedShape,
+      maxWidth: maxWidth,
+      brightness: effectiveBrightness,
+      autoActiveColor: false,
+      autoInactiveColor: false,
+      autoBarStyle: false,
+      autoActionStyle: false,
+      autoDropletSurfaceStyle: false,
+      autoBadgeStyle: false,
+    );
   }
 
   /// The selected tab's glyph and label; every other tab's.
@@ -933,6 +1076,16 @@ class LiquidTabBarTheme {
 
   /// Visual styling configuration for badges rendered in the tab bar.
   final LiquidBadgeStyle badgeStyle;
+
+  /// Null follows the ambient Flutter theme; a value pins the palette.
+  final Brightness? brightness;
+
+  final bool _autoActiveColor;
+  final bool _autoInactiveColor;
+  final bool _autoBarStyle;
+  final bool _autoActionStyle;
+  final bool _autoDropletSurfaceStyle;
+  final bool _autoBadgeStyle;
 
   /// Optical refraction configuration for the moving selection droplet lens.
   final DropletRefractionStyle dropletRefraction;
@@ -966,8 +1119,9 @@ class LiquidTabBarTheme {
     Duration? relax,
     LiquidFoldedShape? foldedShape,
     double? maxWidth,
+    Brightness? brightness,
   }) {
-    return LiquidTabBarTheme(
+    return LiquidTabBarTheme._fromFields(
       activeColor: activeColor ?? this.activeColor,
       inactiveColor: inactiveColor ?? this.inactiveColor,
       labelStyle: labelStyle ?? this.labelStyle,
@@ -980,6 +1134,14 @@ class LiquidTabBarTheme {
       relax: relax ?? this.relax,
       foldedShape: foldedShape ?? this.foldedShape,
       maxWidth: maxWidth ?? this.maxWidth,
+      brightness: brightness ?? this.brightness,
+      autoActiveColor: activeColor == null && _autoActiveColor,
+      autoInactiveColor: inactiveColor == null && _autoInactiveColor,
+      autoBarStyle: barStyle == null && _autoBarStyle,
+      autoActionStyle: actionStyle == null && _autoActionStyle,
+      autoDropletSurfaceStyle:
+          dropletSurfaceStyle == null && _autoDropletSurfaceStyle,
+      autoBadgeStyle: badgeStyle == null && _autoBadgeStyle,
     );
   }
 
@@ -1029,11 +1191,18 @@ class LiquidTabBarTheme {
         other.spring == spring &&
         other.relax == relax &&
         other.foldedShape == foldedShape &&
-        other.maxWidth == maxWidth;
+        other.maxWidth == maxWidth &&
+        other.brightness == brightness &&
+        other._autoActiveColor == _autoActiveColor &&
+        other._autoInactiveColor == _autoInactiveColor &&
+        other._autoBarStyle == _autoBarStyle &&
+        other._autoActionStyle == _autoActionStyle &&
+        other._autoDropletSurfaceStyle == _autoDropletSurfaceStyle &&
+        other._autoBadgeStyle == _autoBadgeStyle;
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         activeColor,
         inactiveColor,
         labelStyle,
@@ -1043,6 +1212,15 @@ class LiquidTabBarTheme {
         barStyle,
         spring,
         relax,
-        Object.hash(foldedShape, maxWidth, dropletRefraction),
-      );
+        foldedShape,
+        maxWidth,
+        dropletRefraction,
+        brightness,
+        _autoActiveColor,
+        _autoInactiveColor,
+        _autoBarStyle,
+        _autoActionStyle,
+        _autoDropletSurfaceStyle,
+        _autoBadgeStyle,
+      ]);
 }

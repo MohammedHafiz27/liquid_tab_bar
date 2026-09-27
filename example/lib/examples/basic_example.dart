@@ -17,6 +17,7 @@ class _BasicExampleState extends State<BasicExample> {
         appBar: AppBar(title: const Text('Basic')),
         body: ShowcaseContent(selected: _selected),
         bottomNavigationBar: LiquidTabBar(
+          theme: LiquidTabBarTheme.dark(barStyle: LiquidBarStyle.glossy()),
           key: const ValueKey('basic-bar'),
           shrinkOnScroll: false,
           selectedIndex: _selected,
