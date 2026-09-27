@@ -6,6 +6,7 @@ import 'examples/advanced_example.dart';
 import 'examples/basic_example.dart';
 import 'examples/custom_icons_example.dart';
 import 'examples/form_field_example.dart';
+import 'examples/four_style_comparison.dart';
 import 'examples/styling_example.dart';
 
 void main() async {
@@ -100,6 +101,19 @@ class LauncherScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
+          ListTile(
+            leading: const Icon(Icons.compare_rounded),
+            title: const Text('4-Style Comparison'),
+            subtitle: const Text(
+              'Normal / Glossy × Light / Dark — same screen',
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const FourStyleComparison(),
+              ),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.navigation_rounded),
             title: const Text('Basic'),

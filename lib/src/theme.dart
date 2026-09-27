@@ -733,20 +733,32 @@ class LiquidBarStyle {
   static LiquidBarStyle _glossyFor(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final base = isDark ? dark : light;
-    final tint = isDark ? const Color(0x661C1C1E) : const Color(0x80FFFFFF);
+
+    // ── Shared optical values (same for light AND dark) ──
+    // Subtle step from Normal Light: rim +2, depth +2, blur −4, specular +0.17
+    const double glossyRim = 7;
+    const double glossyDepth = 8;
+    const double glossyBlur = 14;
+    const double glossySpecular = 0.55;
+    const double glossyEdgeDark = 0.02;
+
+    // ── Only tint / color differs for dark adaptation ──
+    final tint = isDark ? const Color(0x801C1C1E) : const Color(0x80FFFFFF);
+
     return base.copyWith(
       glass: base.glass.copyWith(
-        rim: isDark ? 8 : 10,
-        depth: isDark ? 9 : 11,
-        blur: isDark ? 12 : 10,
+        rim: glossyRim,
+        depth: glossyDepth,
+        blur: glossyBlur,
         tint: tint,
-        specular: isDark ? 0.50 : 1.05,
-        edgeDark: isDark ? 0.10 : 0.02,
+        specular: glossySpecular,
+        edgeDark: glossyEdgeDark,
       ),
       blurTint: tint,
-      blurSheenTop: Color(isDark ? 0x18FFFFFF : 0x48FFFFFF),
-      blurSheenBottom: Color(isDark ? 0x06FFFFFF : 0x18FFFFFF),
-      blurEdge: Color(isDark ? 0x38FFFFFF : 0xCCFFFFFF),
+      // Blur-tier values identical for light AND dark — only tint differs.
+      blurSheenTop: const Color(0x18FFFFFF),
+      blurSheenBottom: const Color(0x08FFFFFF),
+      blurEdge: const Color(0x48FFFFFF),
     );
   }
 
@@ -781,11 +793,11 @@ class LiquidBarStyle {
     depth: 6,
     dispersion: 0.0,
     blur: 18,
-    saturation: 1.08,
+    saturation: 1.15,
     tint: Color(0x8F1C1C1E),
     specular: 0.38,
     light: Offset(-0.55, -0.85),
-    edgeDark: 0.08,
+    edgeDark: 0.02,
     shadow: 0.12,
     shadowBlur: 24,
     shadowOffset: Offset(0, 8),
@@ -817,7 +829,7 @@ class LiquidBarStyle {
     blurTint: Color(0x8F1C1C1E),
     blurSheenTop: Color(0x08FFFFFF),
     blurSheenBottom: Color(0x02FFFFFF),
-    blurEdge: Color(0x12FFFFFF),
+    blurEdge: Color(0x30FFFFFF),
     opaqueFill: Color(0xFF1C1C1E),
     opaqueEdge: Color(0xFF2C2C2E),
     shadow: darkShadow,
