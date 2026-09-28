@@ -4,7 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import 'test_overrides.dart';
-import 'surface_press.dart';
+import '../surface_press.dart';
 
 /// The glass shader — loaded once at startup, gated at runtime.
 ///
@@ -40,14 +40,14 @@ class LiquidGlass {
     return _loadingFuture ??= () async {
       try {
         _program ??= await ui.FragmentProgram.fromAsset(
-          'packages/liquid_tab_bar/assets/shaders/nav_glass.frag',
+          'packages/liquid_tab_bar/assets/shaders/droplet/nav_glass.frag',
         );
       } catch (_) {
         // Blur tier it is.
       }
       try {
         _dropletProgram ??= await ui.FragmentProgram.fromAsset(
-          'packages/liquid_tab_bar/assets/shaders/droplet_glass.frag',
+          'packages/liquid_tab_bar/assets/shaders/droplet/droplet_glass.frag',
         );
       } catch (_) {
         // Blur tier fallback for droplet

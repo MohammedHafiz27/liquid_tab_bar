@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_tab_bar/liquid_tab_bar.dart';
+import 'package:liquid_tab_bar/droplet.dart';
 
 import 'showcase_content.dart';
 
@@ -60,7 +60,11 @@ class _StylingExampleState extends State<StylingExample> {
             const DropletRefractionStyle.strong(),
           ][_preset],
           theme: _style == 1
-              ? LiquidTabBarTheme(barStyle: LiquidBarStyle.glossy())
+              ? LiquidTabBarTheme(
+                  barStyle: LiquidBarStyle.glossy(
+                    brightness: Theme.of(context).brightness,
+                  ),
+                )
               : _style == 2
                   ? LiquidTabBarTheme.adaptive(context).copyWith(
                       activeColor: const Color(0xFF9D572D),

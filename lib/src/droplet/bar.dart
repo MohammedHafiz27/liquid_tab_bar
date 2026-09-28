@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'controller.dart';
 import 'glass.dart';
 import 'scroll_padding.dart';
-import 'surface_press.dart';
+import '../surface_press.dart';
 import 'theme.dart';
 
 const _defaultBadgeColor = Color(0xFFE72B29);

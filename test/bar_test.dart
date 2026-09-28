@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_tab_bar/liquid_tab_bar.dart';
-import 'package:liquid_tab_bar/src/glass.dart';
+import 'package:liquid_tab_bar/droplet.dart';
+import 'package:liquid_tab_bar/src/droplet/glass.dart';
 import 'package:liquid_tab_bar/src/surface_press.dart';
 
 void main() {
@@ -2160,11 +2160,11 @@ void main() {
       'renders dark mode blur tier with theme-aware GlassLightPainter and dark presets',
       (tester) async {
         const darkTheme = LiquidTabBarTheme.dark();
-        expect(darkTheme.barStyle.blurTint, equals(const Color(0x8F1C1C1E)));
-        expect(darkTheme.barStyle.blurEdge, equals(const Color(0x12FFFFFF)));
+        expect(darkTheme.barStyle.blurTint, equals(const Color(0x7818191B)));
+        expect(darkTheme.barStyle.blurEdge, equals(const Color(0x24FFFFFF)));
         expect(
           darkTheme.barStyle.blurSheenTop,
-          equals(const Color(0x08FFFFFF)),
+          equals(const Color(0x09FFFFFF)),
         );
         expect(
           darkTheme.barStyle.blurSheenBottom,

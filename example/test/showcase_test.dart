@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_tab_bar/liquid_tab_bar.dart';
+import 'package:liquid_tab_bar/droplet.dart';
 import 'package:liquid_tab_bar_example/main.dart';
 import 'package:liquid_tab_bar_example/examples/basic_example.dart';
 import 'package:liquid_tab_bar_example/examples/actions_example.dart';
@@ -39,7 +39,7 @@ void main() {
 
   testWidgets('launcher boots with demos', (tester) async {
     await tester.pumpWidget(const LiquidTabBarExampleApp());
-    expect(find.byType(ListTile), findsNWidgets(6));
+    expect(find.byType(ListTile), findsNWidgets(7));
     expect(find.text('Basic'), findsOneWidget);
     expect(find.text('Custom Icons Demo'), findsOneWidget);
     expect(find.text('Text Form Field'), findsOneWidget);
