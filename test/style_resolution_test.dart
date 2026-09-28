@@ -19,14 +19,14 @@ void main() {
           expect(resolved.brightness, brightness);
           expect(resolved.barStyle, normal);
           expect(resolved.barStyle.glass.tint,
-              dark ? const Color(0x8F1C1C1E) : const Color(0x8FFFFFFF));
-          expect(resolved.barStyle.glass.blur, 18);
-          expect(resolved.barStyle.glass.rim, 5);
-          expect(resolved.barStyle.glass.depth, 6);
-          expect(resolved.barStyle.glass.specular, 0.38);
+              dark ? const Color(0x7818191B) : const Color(0x8FFFFFFF));
+          expect(resolved.barStyle.glass.blur, dark ? 16 : 18);
+          expect(resolved.barStyle.glass.rim, dark ? 4.4 : 5);
+          expect(resolved.barStyle.glass.depth, dark ? 4 : 6);
+          expect(resolved.barStyle.glass.specular, dark ? 0.30 : 0.38);
           expect(resolved.barStyle.blurTint, resolved.barStyle.glass.tint);
           expect(resolved.barStyle.blurEdge,
-              dark ? const Color(0x12FFFFFF) : const Color(0x30FFFFFF));
+              dark ? const Color(0x24FFFFFF) : const Color(0x30FFFFFF));
           expect(resolved.inactiveColor,
               dark ? const Color(0xCCF2F2F7) : const Color(0xFF1C1C1E));
           expect(
@@ -46,22 +46,26 @@ void main() {
         expect(resolved.brightness, brightness);
         expect(resolved.barStyle, glossy);
         expect(resolved.barStyle.glass.tint,
-            dark ? const Color(0x661C1C1E) : const Color(0x80FFFFFF));
-        expect(resolved.barStyle.glass.blur, dark ? 12 : 10);
-        expect(resolved.barStyle.glass.rim, dark ? 8 : 10);
-        expect(resolved.barStyle.glass.depth, dark ? 9 : 11);
-        expect(resolved.barStyle.glass.specular, dark ? 0.50 : 1.05);
+            dark ? const Color(0x7818191B) : const Color(0x80FFFFFF));
+        expect(resolved.barStyle.glass.blur, dark ? 16 : 14);
+        expect(resolved.barStyle.glass.rim, dark ? 5.2 : 7);
+        expect(resolved.barStyle.glass.depth, dark ? 4.8 : 8);
+        expect(resolved.barStyle.glass.specular, dark ? 0.36 : 0.55);
         expect(resolved.barStyle.blurTint, resolved.barStyle.glass.tint);
         expect(resolved.barStyle.blurEdge,
-            dark ? const Color(0x38FFFFFF) : const Color(0xCCFFFFFF));
+            dark ? const Color(0x2BFFFFFF) : const Color(0x48FFFFFF));
         expect(resolved.inactiveColor,
             dark ? const Color(0xCCF2F2F7) : const Color(0xFF1C1C1E));
         expect(
             resolved.dropletSurfaceStyle,
             dark
-                ? LiquidDropletSurfaceStyle.dark
+                ? LiquidDropletSurfaceStyle.darkGlossy
                 : LiquidDropletSurfaceStyle.light);
-        expect(resolved.dropletRefraction, const DropletRefractionStyle());
+        expect(
+            resolved.dropletRefraction,
+            dark
+                ? LiquidTabBarTheme.darkGlossyRefraction
+                : const DropletRefractionStyle());
       });
     }
 
@@ -76,7 +80,7 @@ void main() {
       expect(
           theme.barStyle, LiquidBarStyle.glossy(brightness: Brightness.dark));
       expect(theme.inactiveColor, customInactive);
-      expect(theme.dropletSurfaceStyle, LiquidDropletSurfaceStyle.dark);
+      expect(theme.dropletSurfaceStyle, LiquidDropletSurfaceStyle.darkGlossy);
       expect(theme.actionStyle, LiquidTabActionStyle.dark);
     });
 
@@ -94,7 +98,8 @@ void main() {
       ).resolve(Brightness.light);
       expect(pinnedDark.barStyle,
           LiquidBarStyle.glossy(brightness: Brightness.dark));
-      expect(pinnedDark.dropletSurfaceStyle, LiquidDropletSurfaceStyle.dark);
+      expect(
+          pinnedDark.dropletSurfaceStyle, LiquidDropletSurfaceStyle.darkGlossy);
 
       const custom = LiquidBarStyle(
         glass: GlassStyle(tint: Color(0x805522AA)),

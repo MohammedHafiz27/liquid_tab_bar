@@ -589,12 +589,24 @@ class LiquidDropletSurfaceStyle {
   );
 
   static const dark = LiquidDropletSurfaceStyle(
-    gradientTop: Color(0x24FFFFFF),
-    gradientBottom: Color(0x20FFFFFF),
+    gradientTop: Color(0x22FFFFFF),
+    gradientBottom: Color(0x18FFFFFF),
     borderColor: Color(0x00FFFFFF),
     shadow: BoxShadow(
-      color: Color(0x24000000),
-      blurRadius: 4,
+      color: Color(0x14000000),
+      blurRadius: 3,
+      offset: Offset(0, 1),
+    ),
+    opaqueFill: Color(0x2BFFFFFF),
+  );
+
+  static const darkGlossy = LiquidDropletSurfaceStyle(
+    gradientTop: Color(0x29FFFFFF),
+    gradientBottom: Color(0x1DFFFFFF),
+    borderColor: Color(0x00FFFFFF),
+    shadow: BoxShadow(
+      color: Color(0x18000000),
+      blurRadius: 3,
       offset: Offset(0, 1),
     ),
     opaqueFill: Color(0x2BFFFFFF),
@@ -733,17 +745,11 @@ class LiquidBarStyle {
   static LiquidBarStyle _glossyFor(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final base = isDark ? dark : light;
-
-    // ── Shared optical values (same for light AND dark) ──
-    // Subtle step from Normal Light: rim +2, depth +2, blur −4, specular +0.17
-    const double glossyRim = 7;
-    const double glossyDepth = 8;
-    const double glossyBlur = 14;
-    const double glossySpecular = 0.55;
-    const double glossyEdgeDark = 0.02;
-
-    // ── Only tint / color differs for dark adaptation ──
-    final tint = isDark ? const Color(0x801C1C1E) : const Color(0x80FFFFFF);
+    final glossyRim = isDark ? 5.2 : 7.0;
+    final glossyDepth = isDark ? 4.8 : 8.0;
+    final glossyBlur = isDark ? 16.0 : 14.0;
+    final glossySpecular = isDark ? 0.36 : 0.55;
+    final tint = isDark ? darkGlass.tint : const Color(0x80FFFFFF);
 
     return base.copyWith(
       glass: base.glass.copyWith(
@@ -752,15 +758,19 @@ class LiquidBarStyle {
         blur: glossyBlur,
         tint: tint,
         specular: glossySpecular,
-        edgeDark: glossyEdgeDark,
+        edgeDark: 0.02,
       ),
       blurTint: tint,
-      // Blur-tier values identical for light AND dark — only tint differs.
-      blurSheenTop: const Color(0x18FFFFFF),
-      blurSheenBottom: const Color(0x08FFFFFF),
-      blurEdge: const Color(0x48FFFFFF),
+      blurSheenTop: isDark ? const Color(0x0BFFFFFF) : const Color(0x18FFFFFF),
+      blurSheenBottom:
+          isDark ? const Color(0x04FFFFFF) : const Color(0x08FFFFFF),
+      blurEdge: isDark ? const Color(0x2BFFFFFF) : const Color(0x48FFFFFF),
     );
   }
+
+  bool get _isGlossyPreset =>
+      _kind == _LiquidBarStyleKind.glossy ||
+      this == _glossyFor(Brightness.dark);
 
   /// Resolves an unpinned Normal or Glossy preset for [brightness]. Custom
   /// styles and presets created with an explicit brightness retain their values.
@@ -788,19 +798,19 @@ class LiquidBarStyle {
   );
 
   static const GlassStyle darkGlass = GlassStyle(
-    rim: 5,
+    rim: 4.4,
     curve: 1.0,
-    depth: 6,
+    depth: 4,
     dispersion: 0.0,
-    blur: 18,
-    saturation: 1.15,
-    tint: Color(0x8F1C1C1E),
-    specular: 0.38,
+    blur: 16,
+    saturation: 1.08,
+    tint: Color(0x7818191B),
+    specular: 0.30,
     light: Offset(-0.55, -0.85),
     edgeDark: 0.02,
-    shadow: 0.12,
-    shadowBlur: 24,
-    shadowOffset: Offset(0, 8),
+    shadow: 0.08,
+    shadowBlur: 20,
+    shadowOffset: Offset(0, 6),
   );
 
   static const List<BoxShadow> lightShadow = [
@@ -815,21 +825,21 @@ class LiquidBarStyle {
 
   static const List<BoxShadow> darkShadow = [
     BoxShadow(
-      color: Color(0x40000000),
-      offset: Offset(0, 10),
-      blurRadius: 28,
+      color: Color(0x26000000),
+      offset: Offset(0, 7),
+      blurRadius: 22,
       spreadRadius: -2,
     ),
-    BoxShadow(color: Color(0x18000000), offset: Offset(0, 2), blurRadius: 8),
+    BoxShadow(color: Color(0x10000000), offset: Offset(0, 2), blurRadius: 7),
   ];
 
   static const LiquidBarStyle light = LiquidBarStyle(glass: lightGlass);
   static const LiquidBarStyle dark = LiquidBarStyle(
     glass: darkGlass,
-    blurTint: Color(0x8F1C1C1E),
-    blurSheenTop: Color(0x08FFFFFF),
+    blurTint: Color(0x7818191B),
+    blurSheenTop: Color(0x09FFFFFF),
     blurSheenBottom: Color(0x02FFFFFF),
-    blurEdge: Color(0x30FFFFFF),
+    blurEdge: Color(0x24FFFFFF),
     opaqueFill: Color(0xFF1C1C1E),
     opaqueEdge: Color(0xFF2C2C2E),
     shadow: darkShadow,
@@ -923,6 +933,17 @@ class LiquidBarStyle {
 /// fields follow the ambient brightness when the bar builds; explicitly
 /// supplied fields keep their values.
 class LiquidTabBarTheme {
+  static const darkNormalRefraction = DropletRefractionStyle();
+
+  static const darkGlossyRefraction = DropletRefractionStyle(
+    thickness: 14,
+    refractiveIndex: 1.52,
+    baseHeight: 26,
+    dispersion: 0.19,
+    specularStrength: 0.18,
+    refractionStrength: 0.70,
+  );
+
   /// Default spring physics for fold and lens motions.
   static const SpringDescription defaultSpring = SpringDescription(
     mass: 1,
@@ -968,19 +989,21 @@ class LiquidTabBarTheme {
     this.labelStyle = const TextStyle(),
     this.barStyle = LiquidBarStyle.dark,
     this.actionStyle = LiquidTabActionStyle.dark,
-    this.dropletSurfaceStyle = LiquidDropletSurfaceStyle.dark,
+    LiquidDropletSurfaceStyle? dropletSurfaceStyle,
     this.badgeStyle = const LiquidBadgeStyle(borderColor: Color(0xFF1C1C1E)),
-    this.dropletRefraction = const DropletRefractionStyle(),
+    this.dropletRefraction = darkNormalRefraction,
     this.spring = defaultSpring,
     this.relax = defaultRelax,
     this.foldedShape = LiquidFoldedShape.circle,
     this.maxWidth,
-  })  : brightness = Brightness.dark,
+  })  : dropletSurfaceStyle =
+            dropletSurfaceStyle ?? LiquidDropletSurfaceStyle.dark,
+        brightness = Brightness.dark,
         _autoActiveColor = false,
         _autoInactiveColor = false,
         _autoBarStyle = false,
         _autoActionStyle = false,
-        _autoDropletSurfaceStyle = false,
+        _autoDropletSurfaceStyle = dropletSurfaceStyle == null,
         _autoBadgeStyle = false;
 
   const LiquidTabBarTheme._fromFields({
@@ -1039,21 +1062,27 @@ class LiquidTabBarTheme {
     final dark = effectiveBrightness == Brightness.dark;
     final base =
         dark ? const LiquidTabBarTheme.dark() : const LiquidTabBarTheme();
+    final resolvedBarStyle = _autoBarStyle
+        ? (dark ? LiquidBarStyle.dark : LiquidBarStyle.light)
+        : barStyle.resolve(effectiveBrightness);
+    final darkGlossy = dark && resolvedBarStyle._isGlossyPreset;
     return LiquidTabBarTheme._fromFields(
       activeColor: _autoActiveColor
           ? (brightness == null ? primary : null) ?? base.activeColor
           : activeColor,
       inactiveColor: _autoInactiveColor ? base.inactiveColor : inactiveColor,
       labelStyle: labelStyle,
-      barStyle: _autoBarStyle
-          ? (dark ? LiquidBarStyle.dark : LiquidBarStyle.light)
-          : barStyle.resolve(effectiveBrightness),
+      barStyle: resolvedBarStyle,
       actionStyle: _autoActionStyle ? base.actionStyle : actionStyle,
       dropletSurfaceStyle: _autoDropletSurfaceStyle
-          ? base.dropletSurfaceStyle
+          ? (darkGlossy
+              ? LiquidDropletSurfaceStyle.darkGlossy
+              : base.dropletSurfaceStyle)
           : dropletSurfaceStyle,
       badgeStyle: _autoBadgeStyle ? base.badgeStyle : badgeStyle,
-      dropletRefraction: dropletRefraction,
+      dropletRefraction: dark && dropletRefraction == darkNormalRefraction
+          ? (darkGlossy ? darkGlossyRefraction : darkNormalRefraction)
+          : dropletRefraction,
       spring: spring,
       relax: relax,
       foldedShape: foldedShape,

@@ -35,12 +35,12 @@ const _lightDropletGlass = GlassStyle(
 const _darkDropletGlass = GlassStyle(
   rim: 13,
   curve: 1.2,
-  depth: 4,
+  depth: 5,
   dispersion: 0,
   blur: 0,
   saturation: 1.15,
   tint: Color(0x38FFFFFF),
-  specular: 0.26,
+  specular: 0.28,
   light: Offset(-0.55, -0.85),
   edgeDark: 0.02,
 );

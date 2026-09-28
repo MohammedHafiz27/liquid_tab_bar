@@ -94,19 +94,61 @@ class _FourStyleComparisonState extends State<FourStyleComparison> {
               ),
             ],
           ),
-          body: ShowcaseContent(
-            selected: _selected,
-            controls: Wrap(
-              spacing: 8,
-              children: [
-                for (var i = 0; i < 4; i++)
-                  ChoiceChip(
-                    label: Text(_styleLabels[i]),
-                    selected: _styleIndex == i,
-                    onSelected: (_) => setState(() => _styleIndex = i),
+          body: Stack(
+            children: [
+              ShowcaseContent(
+                selected: _selected,
+                controls: Wrap(
+                  spacing: 8,
+                  children: [
+                    for (var i = 0; i < 4; i++)
+                      ChoiceChip(
+                        label: Text(_styleLabels[i]),
+                        selected: _styleIndex == i,
+                        onSelected: (_) => setState(() => _styleIndex = i),
+                      ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 30,
+                right: 30,
+                bottom: 36,
+                height: 110,
+                child: IgnorePointer(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'WHITE\nTEXT',
+                        style: TextStyle(
+                          color: _isDarkStyle ? Colors.white : Colors.black,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 88,
+                        color: _isDarkStyle ? Colors.white : Colors.black,
+                      ),
+                      const Icon(Icons.favorite,
+                          color: Color(0xFFFF3B45), size: 30),
+                      const Icon(Icons.auto_awesome,
+                          color: Color(0xFF4DA3FF), size: 30),
+                      Text(
+                        'GLASS',
+                        style: TextStyle(
+                          color: _isDarkStyle ? Colors.white : Colors.black,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
           bottomNavigationBar: LiquidTabBar(
             key: ValueKey('comparison-$_styleIndex'),

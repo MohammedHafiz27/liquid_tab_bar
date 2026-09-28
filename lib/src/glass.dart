@@ -1146,8 +1146,8 @@ class LiquidDropletHighlightPainter extends CustomPainter {
         cache.shader == null) {
       // Bright opposing edges describe a curved surface. The quiet center and
       // short highlight keep the resting selection from looking outlined.
-      final top = (isDark ? 0.10 : 0.28) + 0.22 * movement;
-      final bottom = (isDark ? 0.04 : 0.12) + 0.12 * movement;
+      final top = (isDark ? 0.22 : 0.28) + 0.22 * movement;
+      final bottom = (isDark ? 0.09 : 0.12) + 0.12 * movement;
       cache.shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

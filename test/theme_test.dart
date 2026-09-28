@@ -8,26 +8,46 @@ void main() {
     expect(
         style.glass,
         LiquidBarStyle.dark.glass.copyWith(
-          rim: 8,
-          depth: 9,
-          blur: 12,
-          tint: const Color(0x661C1C1E),
-          specular: 0.50,
-          edgeDark: 0.10,
+          rim: 5.2,
+          depth: 4.8,
+          blur: 16,
+          tint: const Color(0x7818191B),
+          specular: 0.36,
+          edgeDark: 0.02,
         ));
-    expect(style.blurTint, const Color(0x661C1C1E));
-    expect(style.blurSheenTop, const Color(0x18FFFFFF));
-    expect(style.blurSheenBottom, const Color(0x06FFFFFF));
-    expect(style.blurEdge, const Color(0x38FFFFFF));
+    expect(style.blurTint, const Color(0x7818191B));
+    expect(style.blurSheenTop, const Color(0x0BFFFFFF));
+    expect(style.blurSheenBottom, const Color(0x04FFFFFF));
+    expect(style.blurEdge, const Color(0x2BFFFFFF));
+  });
+  test('dark lens restores Light optics with a controlled Glossy step', () {
+    const normalLight = LiquidTabBarTheme();
+    final normalDark = const LiquidTabBarTheme.dark().resolve(Brightness.dark);
+    final glossyLight = LiquidTabBarTheme(
+      barStyle: LiquidBarStyle.glossy(),
+    ).resolve(Brightness.light);
+    final glossyDark = LiquidTabBarTheme.dark(
+      barStyle: LiquidBarStyle.glossy(),
+    ).resolve(Brightness.dark);
+
+    expect(normalDark.dropletRefraction, normalLight.dropletRefraction);
+    expect(glossyLight.dropletRefraction, normalLight.dropletRefraction);
+    expect(glossyDark.dropletRefraction.thickness, 14);
+    expect(glossyDark.dropletRefraction.baseHeight, 26);
+    expect(glossyDark.dropletRefraction.dispersion, 0.19);
+    expect(glossyDark.dropletRefraction.specularStrength, 0.18);
+    expect(glossyDark.dropletRefraction.refractionStrength, 0.70);
+    expect(
+        glossyDark.dropletSurfaceStyle, LiquidDropletSurfaceStyle.darkGlossy);
   });
   test('Light Glossy has brighter reflections without becoming opaque', () {
     final style = LiquidBarStyle.glossy();
-    expect(style.glass.rim, 10);
-    expect(style.glass.blur, 10);
-    expect(style.glass.specular, 1.05);
+    expect(style.glass.rim, 7);
+    expect(style.glass.blur, 14);
+    expect(style.glass.specular, 0.55);
     expect(style.glass.tint, const Color(0x80FFFFFF));
     expect(style.glass.edgeDark, 0.02);
-    expect(style.blurEdge, const Color(0xCCFFFFFF));
+    expect(style.blurEdge, const Color(0x48FFFFFF));
   });
   for (final brightness in Brightness.values) {
     test('Glossy $brightness keeps neutral optics and matching fallback', () {
@@ -37,7 +57,11 @@ void main() {
       final glossy = LiquidBarStyle.glossy(brightness: brightness);
       expect(glossy.glass.dispersion, 0);
       expect(glossy.glass.tint, glossy.blurTint);
-      expect(glossy.glass.tint.a, lessThan(base.glass.tint.a));
+      expect(
+          glossy.glass.tint.a,
+          brightness == Brightness.dark
+              ? base.glass.tint.a
+              : lessThan(base.glass.tint.a));
       expect(glossy.glass.rim, greaterThan(base.glass.rim));
       expect(glossy.glass.specular, greaterThan(base.glass.specular));
       expect(glossy.blurEdge.a, greaterThan(base.blurEdge.a));
@@ -74,9 +98,11 @@ void main() {
       expect(light.shadow.blurRadius, 4);
       expect(light.shadow.offset, const Offset(0, 1));
       const dark = LiquidDropletSurfaceStyle.dark;
-      expect(dark.shadow.color, const Color(0x24000000));
-      expect(dark.shadow.blurRadius, 4);
+      expect(dark.shadow.color, const Color(0x14000000));
+      expect(dark.shadow.blurRadius, 3);
       expect(dark.shadow.offset, const Offset(0, 1));
+      expect(LiquidDropletSurfaceStyle.darkGlossy.gradientTop,
+          const Color(0x29FFFFFF));
     });
 
     test('copyWith, lerp, equality and hashCode include BoxShadow', () {
