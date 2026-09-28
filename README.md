@@ -12,9 +12,12 @@ Package version in this repository: `2.0.0`
 
 ## iOS simulator preview
 
-The current Basic example on an iPhone 17 Pro Max simulator:
+Current normal styles on an iPhone 17 Pro Max simulator. Both images show the
+same tab bar with a selected tab and a notification badge.
 
-<img src="doc/images/ios_simulator_basic.png" alt="Current LiquidTabBar Basic example running in the iOS simulator" width="360" />
+| Light | Dark |
+|:---:|:---:|
+| <img src="doc/images/normal_light.png" alt="Normal light LiquidTabBar on iOS" width="300" /> | <img src="doc/images/normal_dark.png" alt="Normal dark LiquidTabBar on iOS" width="300" /> |
 
 ---
 
@@ -131,6 +134,8 @@ when shader glass is unavailable.
 ## Custom Icons
 
 `LiquidTabBar` supports both standard Material/Cupertino `IconData` and arbitrary custom Flutter `Widget`s (such as SVGs, raster images, custom painters, and animated widgets).
+
+<img src="doc/images/custom.png" alt="LiquidTabBar with custom SVG icons and a purple theme on iOS" width="300" />
 
 ### Standard Icons (`IconData`)
 
@@ -333,6 +338,10 @@ uses your app's primary color for the selected icon and label.
 `LiquidBarStyle.glossy()` follows the ambient light/dark brightness. Passing
 `brightness:` pins a specific glossy palette.
 
+| Glossy light | Glossy dark |
+|:---:|:---:|
+| <img src="doc/images/glossy_light.png" alt="Glossy light LiquidTabBar on iOS" width="300" /> | <img src="doc/images/glossy_dark.png" alt="Glossy dark LiquidTabBar on iOS" width="300" /> |
+
 Opt into a brighter neutral bevel, luminous tint, and clearer backdrop colors:
 
 ```dart
@@ -483,6 +492,10 @@ dropletRefraction: const DropletRefractionStyle.medium(),
 
 ## Actions & Placement
 
+| Together | Split |
+|:---:|:---:|
+| <img src="doc/images/together.png" alt="Action button next to the tab bar on iOS" width="300" /> | <img src="doc/images/split.png" alt="Action button at the opposite edge of the tab bar on iOS" width="300" /> |
+
 Attach a standalone circular button (such as Create, Filter, or Search) alongside the navigation capsule:
 
 ```dart
@@ -529,6 +542,8 @@ LiquidTabItem.icon(
 ---
 
 ## Expandable Search
+
+<img src="doc/images/search.png" alt="Expanded LiquidTabBar search field on iOS" width="300" />
 
 Transform the navigation bar into an edge-to-edge floating search field:
 
@@ -601,6 +616,8 @@ LiquidTabAction.search(
 ---
 
 ## Adaptive Folding
+
+<img src="doc/images/folded.png" alt="LiquidTabBar folded to the selected tab on iOS" width="300" />
 
 ### Automatic Folding (Recommended)
 
