@@ -1107,6 +1107,7 @@ class DropletHighlightCache {
   bool? isDark;
   double? fade;
   double? motion;
+  double? edgeEnergy;
   Shader? shader;
   final Paint paint = Paint()
     ..style = PaintingStyle.stroke
@@ -1125,12 +1126,14 @@ class LiquidDropletHighlightPainter extends CustomPainter {
     required this.isDark,
     required this.fade,
     required this.cache,
+    this.edgeEnergy = 1.0,
   });
 
   final double radius;
   final double motion;
   final bool isDark;
   final double fade;
+  final double edgeEnergy;
   final DropletHighlightCache cache;
 
   @override
@@ -1143,11 +1146,12 @@ class LiquidDropletHighlightPainter extends CustomPainter {
         cache.isDark != isDark ||
         cache.fade != opacity ||
         cache.motion != movement ||
+        cache.edgeEnergy != edgeEnergy ||
         cache.shader == null) {
       // Bright opposing edges describe a curved surface. The quiet center and
       // short highlight keep the resting selection from looking outlined.
-      final top = (isDark ? 0.22 : 0.28) + 0.22 * movement;
-      final bottom = (isDark ? 0.09 : 0.12) + 0.12 * movement;
+      final top = ((isDark ? 0.22 : 0.28) + 0.22 * movement) * edgeEnergy;
+      final bottom = ((isDark ? 0.09 : 0.12) + 0.12 * movement) * edgeEnergy;
       cache.shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -1163,6 +1167,7 @@ class LiquidDropletHighlightPainter extends CustomPainter {
       cache.isDark = isDark;
       cache.fade = opacity;
       cache.motion = movement;
+      cache.edgeEnergy = edgeEnergy;
     }
     cache.paint.shader = cache.shader;
     canvas.drawRRect(
@@ -1176,5 +1181,6 @@ class LiquidDropletHighlightPainter extends CustomPainter {
       old.radius != radius ||
       old.motion != motion ||
       old.isDark != isDark ||
-      old.fade != fade;
+      old.fade != fade ||
+      old.edgeEnergy != edgeEnergy;
 }

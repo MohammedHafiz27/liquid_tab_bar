@@ -936,12 +936,12 @@ class LiquidTabBarTheme {
   static const darkNormalRefraction = DropletRefractionStyle();
 
   static const darkGlossyRefraction = DropletRefractionStyle(
-    thickness: 14,
+    thickness: 14.5,
     refractiveIndex: 1.52,
-    baseHeight: 26,
-    dispersion: 0.19,
-    specularStrength: 0.18,
-    refractionStrength: 0.70,
+    baseHeight: 27,
+    dispersion: 0.21,
+    specularStrength: 0.21,
+    refractionStrength: 0.78,
   );
 
   /// Default spring physics for fold and lens motions.

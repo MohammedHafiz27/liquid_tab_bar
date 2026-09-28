@@ -32,11 +32,11 @@ void main() {
 
     expect(normalDark.dropletRefraction, normalLight.dropletRefraction);
     expect(glossyLight.dropletRefraction, normalLight.dropletRefraction);
-    expect(glossyDark.dropletRefraction.thickness, 14);
-    expect(glossyDark.dropletRefraction.baseHeight, 26);
-    expect(glossyDark.dropletRefraction.dispersion, 0.19);
-    expect(glossyDark.dropletRefraction.specularStrength, 0.18);
-    expect(glossyDark.dropletRefraction.refractionStrength, 0.70);
+    expect(glossyDark.dropletRefraction.thickness, 14.5);
+    expect(glossyDark.dropletRefraction.baseHeight, 27);
+    expect(glossyDark.dropletRefraction.dispersion, 0.21);
+    expect(glossyDark.dropletRefraction.specularStrength, 0.21);
+    expect(glossyDark.dropletRefraction.refractionStrength, 0.78);
     expect(
         glossyDark.dropletSurfaceStyle, LiquidDropletSurfaceStyle.darkGlossy);
   });
