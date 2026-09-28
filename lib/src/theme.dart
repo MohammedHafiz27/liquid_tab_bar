@@ -770,7 +770,8 @@ class LiquidBarStyle {
 
   bool get _isGlossyPreset =>
       _kind == _LiquidBarStyleKind.glossy ||
-      this == _glossyFor(Brightness.dark);
+      this == _glossyFor(Brightness.dark) ||
+      this == _glossyFor(Brightness.light);
 
   /// Resolves an unpinned Normal or Glossy preset for [brightness]. Custom
   /// styles and presets created with an explicit brightness retain their values.
@@ -933,15 +934,23 @@ class LiquidBarStyle {
 /// fields follow the ambient brightness when the bar builds; explicitly
 /// supplied fields keep their values.
 class LiquidTabBarTheme {
+  static const lightGlossyRefraction = DropletRefractionStyle(
+    thickness: 13.5,
+    baseHeight: 25.5,
+    dispersion: 0.18,
+    specularStrength: 0.17,
+    refractionStrength: 0.66,
+  );
+
   static const darkNormalRefraction = DropletRefractionStyle();
 
   static const darkGlossyRefraction = DropletRefractionStyle(
-    thickness: 14.5,
+    thickness: 15,
     refractiveIndex: 1.52,
-    baseHeight: 27,
-    dispersion: 0.21,
-    specularStrength: 0.21,
-    refractionStrength: 0.78,
+    baseHeight: 28,
+    dispersion: 0.23,
+    specularStrength: 0.23,
+    refractionStrength: 0.84,
   );
 
   /// Default spring physics for fold and lens motions.
@@ -1065,7 +1074,8 @@ class LiquidTabBarTheme {
     final resolvedBarStyle = _autoBarStyle
         ? (dark ? LiquidBarStyle.dark : LiquidBarStyle.light)
         : barStyle.resolve(effectiveBrightness);
-    final darkGlossy = dark && resolvedBarStyle._isGlossyPreset;
+    final glossy = resolvedBarStyle._isGlossyPreset;
+    final darkGlossy = dark && glossy;
     return LiquidTabBarTheme._fromFields(
       activeColor: _autoActiveColor
           ? (brightness == null ? primary : null) ?? base.activeColor
@@ -1080,8 +1090,10 @@ class LiquidTabBarTheme {
               : base.dropletSurfaceStyle)
           : dropletSurfaceStyle,
       badgeStyle: _autoBadgeStyle ? base.badgeStyle : badgeStyle,
-      dropletRefraction: dark && dropletRefraction == darkNormalRefraction
-          ? (darkGlossy ? darkGlossyRefraction : darkNormalRefraction)
+      dropletRefraction: dropletRefraction == const DropletRefractionStyle()
+          ? (glossy
+              ? (dark ? darkGlossyRefraction : lightGlossyRefraction)
+              : dropletRefraction)
           : dropletRefraction,
       spring: spring,
       relax: relax,

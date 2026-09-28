@@ -2068,14 +2068,12 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         lensCxLocal != null &&
         lensStyle != null &&
         m != LiquidTabBarMaterial.opaque) {
-      final isDark = th.barStyle.blurTint.computeLuminance() < 0.2;
       final refraction = widget.dropletRefraction ?? th.dropletRefraction;
-      final edgeEnergy = isDark
-          ? (refraction.specularStrength /
-                  LiquidTabBarTheme.darkNormalRefraction.specularStrength)
-              .clamp(1.0, 1.4)
-              .toDouble()
-          : 1.0;
+      final isDark = th.barStyle.blurTint.computeLuminance() < 0.2;
+      final edgeEnergy = (refraction.specularStrength /
+              LiquidTabBarTheme.darkNormalRefraction.specularStrength)
+          .clamp(1.0, 1.5)
+          .toDouble();
       children.add(
         Positioned(
           left: lensCxLocal - lensW / 2,

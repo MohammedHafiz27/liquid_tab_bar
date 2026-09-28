@@ -20,7 +20,7 @@ void main() {
     expect(style.blurSheenBottom, const Color(0x04FFFFFF));
     expect(style.blurEdge, const Color(0x2BFFFFFF));
   });
-  test('dark lens restores Light optics with a controlled Glossy step', () {
+  test('Glossy lenses increase optics in both brightness modes', () {
     const normalLight = LiquidTabBarTheme();
     final normalDark = const LiquidTabBarTheme.dark().resolve(Brightness.dark);
     final glossyLight = LiquidTabBarTheme(
@@ -31,12 +31,13 @@ void main() {
     ).resolve(Brightness.dark);
 
     expect(normalDark.dropletRefraction, normalLight.dropletRefraction);
-    expect(glossyLight.dropletRefraction, normalLight.dropletRefraction);
-    expect(glossyDark.dropletRefraction.thickness, 14.5);
-    expect(glossyDark.dropletRefraction.baseHeight, 27);
-    expect(glossyDark.dropletRefraction.dispersion, 0.21);
-    expect(glossyDark.dropletRefraction.specularStrength, 0.21);
-    expect(glossyDark.dropletRefraction.refractionStrength, 0.78);
+    expect(
+        glossyLight.dropletRefraction, LiquidTabBarTheme.lightGlossyRefraction);
+    expect(glossyDark.dropletRefraction.thickness, 15);
+    expect(glossyDark.dropletRefraction.baseHeight, 28);
+    expect(glossyDark.dropletRefraction.dispersion, 0.23);
+    expect(glossyDark.dropletRefraction.specularStrength, 0.23);
+    expect(glossyDark.dropletRefraction.refractionStrength, 0.84);
     expect(
         glossyDark.dropletSurfaceStyle, LiquidDropletSurfaceStyle.darkGlossy);
   });
