@@ -1,137 +1,130 @@
 # liquid_tab_bar
 
-A floating liquid-glass navigation bar for Flutter with optical refraction, spring-driven selection, expandable search, actions, badges, and scroll-aware folding.
+A floating glass tab bar for Flutter. It supports a moving selection lens,
+search, action buttons, badges, and a compact shape while scrolling.
 
-Current release: `2.0.0`
+Package version in this repository: `2.0.0`
 
 [![pub package](https://img.shields.io/pub/v/liquid_tab_bar.svg)](https://pub.dev/packages/liquid_tab_bar)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
-## Visual Showcase
+## iOS simulator preview
 
-<table>
-  <tr>
-    <th width="50%">Press & Hold — Dark</th>
-    <th width="50%">Press & Hold — Light</th>
-  </tr>
-  <tr>
-    <td><img src="doc/images/held_dark.png" alt="Held liquid glass droplet in dark mode" width="100%" /></td>
-    <td><img src="doc/images/held_light.png" alt="Held liquid glass droplet in light mode" width="100%" /></td>
-  </tr>
-  <tr>
-    <th colspan="2">Basic Navigation</th>
-  </tr>
-  <tr>
-    <td colspan="2"><img src="doc/images/basic.png" alt="Basic liquid tab bar" width="100%" /></td>
-  </tr>
-</table>
+The current Basic example on an iPhone 17 Pro Max simulator:
+
+<img src="doc/images/ios_simulator_basic.png" alt="Current LiquidTabBar Basic example running in the iOS simulator" width="360" />
 
 ---
 
 ## Features
 
-- **Fluid Droplet Navigation**: Selection lens driven by analytical spring physics with velocity stretch during interactive scrubbing. Pressing or moving the droplet widens its glass capsule and gives the surrounding bar a subtle lift. Its reflective rim stays visible between tabs and settles back after selection.
-- **Physical Optical Refraction**: Snell's-law shader dynamically bends underlying graphics along the moving droplet's bevel rim, returning to zero displacement at rest.
-- **Three Material Tiers**: Automatic tier selection across GPU Shader Glass (Impeller), real-time Backdrop Blur, and high-contrast Opaque materials.
-- **Expandable Search**: Morphs navigation into an edge-to-edge floating search bar that anchors above the software keyboard without layout jumps.
-- **Separate Action Buttons**: Attach standalone actions with grouped (`together`) or edge-spaced (`split`) placement.
-- **Custom Widget Icons**: Render arbitrary Flutter widgets (SVGs, raster images, custom painters, and animated widgets) as tab items and search glyphs while preserving theme tinting, droplet movement, badges, and optical refraction.
-- **Versatile Badges**: Unread dots, auto-truncating count pills (`99+`), text badges (`PRO`), and custom badge widgets that participate in droplet refraction.
-- **Adaptive Scroll Folding**: Automatically collapses into a compact pill on downward scroll and restores on scroll-up or tap.
-- **Bidirectional RTL**: Native mirroring for Arabic, Hebrew, and Persian layouts following ambient `Directionality`.
-- **Accessibility & Reduced Motion**: VoiceOver/TalkBack semantics and instant value snapping under `MediaQuery.disableAnimationsOf`.
-- **Automatic Frame Governor**: Monitors GPU raster times to gracefully step down to blur if dropped frames are detected.
-
----
-
-## Style Architecture
-
-Version `2.0.0` organizes styling into single-responsibility configuration objects:
-
-| Style Class | Target Layer | Key Properties |
-|:---|:---|:---|
-| **`LiquidBarStyle`** | Outer capsule | Glass preset (`glass`), blur tint (`blurTint`), opaque fill (`opaqueFill`), border, and drop shadow (`shadow`). |
-| **`LiquidDropletSurfaceStyle`** | Moving droplet surface | Gradient (`gradientTop`, `gradientBottom`), border stroke, outer shadow (`shadow`), and opaque fill. |
-| **`DropletRefractionStyle`** | Droplet optical refraction | Rim bevel (`thickness`), refractive index (`refractiveIndex`), depth (`baseHeight`), dispersion, specular, and strength. |
-| **`LiquidTabActionStyle`** | Separate action | Selected marker highlight fill (`selectedFill`). |
-| **`LiquidBadgeStyle`** | Tab & action badges | Fill color (`color`), text color (`textColor`), text style (`textStyle`), size (`size`), dot size, border, and offset. |
+- **Animated selection**: Tap or drag across tabs; the glass lens follows and
+  settles on the selected tab.
+- **Glass with fallbacks**: Uses shader glass where supported, backdrop blur
+  elsewhere, and an opaque mode when needed.
+- **Search and actions**: Add an expandable search field or a separate action
+  button beside the tabs.
+- **Icons and badges**: Use Flutter icons or your own widgets, plus unread
+  dots, counts, or text badges.
+- **Scroll folding**: The bar can shrink to a small pill while you scroll and
+  expand again when you return.
+- **Accessibility**: Supports screen readers, right-to-left layouts, and
+  reduced motion settings.
 
 ---
 
 ## Installation
 
-Add `liquid_tab_bar` to your `pubspec.yaml`:
+For a published `2.0.0` release, add this to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
   liquid_tab_bar: ^2.0.0
 ```
 
-Fragment shaders are bundled with the package; no custom asset declarations are required in your host application.
-
-> [!NOTE]
-> `liquid_tab_bar` is dependency-free from external SVG or image packages. If you want to render SVG assets, add your preferred package (such as [`flutter_svg`](https://pub.dev/packages/flutter_svg)) to your host application's dependencies.
-
-For the SVG example below, add `flutter_svg` and declare the SVG directory in
-the host application's `pubspec.yaml`:
+To try this repository before that version is published, use a local path
+instead. Adjust the path to where you cloned this repository:
 
 ```yaml
 dependencies:
-  flutter_svg: ^2.3.0
-
-flutter:
-  assets:
-    - assets/icons/
+  liquid_tab_bar:
+    path: ../liquid_tab_bar
 ```
 
----
-
-## Setup
-
-For the smoothest glass experience, pre-warm the shaders and arm the automatic frame governor before `runApp`:
+Then run `flutter pub get`. Import the package in your Dart file:
 
 ```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await LiquidGlass.load();
-  LiquidTabBarController.shared.armGovernor();
-
-  runApp(const MyApp());
-}
+import 'package:liquid_tab_bar/liquid_tab_bar.dart';
 ```
 
----
+The glass shaders are bundled with the package. Your app does not need to
+declare them as assets.
+
+> [!NOTE]
+> SVG support is optional. If you use SVG icons, add an SVG package such as
+> `flutter_svg` to your app. Standard Flutter icons work without it.
 
 ## Quick Start
 
-The fastest way to integrate `LiquidTabBar` is with `LiquidTabBarScaffold`, which automatically configures `extendBody: true` and reserves bottom scroll padding:
+This complete `lib/main.dart` example shows three tabs and a scrollable page:
 
 ```dart
-LiquidTabBarScaffold(
-  body: yourScrollableContent,
-  tabBar: LiquidTabBar(
-    selectedIndex: _selectedIndex,
-    onSelected: (index) => setState(() => _selectedIndex = index),
-    items: const [
-      LiquidTabItem.icon(
-        icon: Icons.home_rounded,
-        label: 'Home',
+import 'package:flutter/material.dart';
+import 'package:liquid_tab_bar/liquid_tab_bar.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LiquidGlass.load();
+  runApp(const DemoApp());
+}
+
+class DemoApp extends StatefulWidget {
+  const DemoApp({super.key});
+
+  @override
+  State<DemoApp> createState() => _DemoAppState();
+}
+
+class _DemoAppState extends State<DemoApp> {
+  int selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    const tabLabels = ['Home', 'Explore', 'Profile'];
+    return MaterialApp(
+      home: LiquidTabBarScaffold(
+        appBar: AppBar(title: const Text('Liquid Tab Bar')),
+        body: ListView.builder(
+          itemCount: 30,
+          itemBuilder: (context, index) => ListTile(
+            title: Text('${tabLabels[selectedIndex]} item ${index + 1}'),
+          ),
+        ),
+        tabBar: LiquidTabBar(
+          selectedIndex: selectedIndex,
+          onSelected: (index) => setState(() => selectedIndex = index),
+          items: const [
+            LiquidTabItem.icon(label: 'Home', icon: Icons.home_outlined),
+            LiquidTabItem.icon(label: 'Explore', icon: Icons.explore_outlined),
+            LiquidTabItem.icon(label: 'Profile', icon: Icons.person_outline),
+          ],
+        ),
       ),
-      LiquidTabItem.icon(
-        icon: Icons.search_rounded,
-        label: 'Search',
-      ),
-      LiquidTabItem.icon(
-        icon: Icons.person_rounded,
-        label: 'Profile',
-      ),
-    ],
-  ),
-)
+    );
+  }
+}
 ```
+
+Save the file and run `flutter run`.
+
+`selectedIndex` tells the bar which tab is active. `onSelected` updates your
+app state when the user chooses a tab. Replace the sample `ListView` with your
+own content. `LiquidTabBarScaffold` lets the page draw behind the floating bar,
+adds bottom space so the last list item stays visible, and handles scroll
+folding. `LiquidGlass.load()` prepares the shader; the bar falls back to blur
+when shader glass is unavailable.
 
 ---
 
@@ -490,17 +483,6 @@ dropletRefraction: const DropletRefractionStyle.medium(),
 
 ## Actions & Placement
 
-<table>
-  <tr>
-    <th width="50%">Together Placement (<code>LiquidTabActionPlacement.together</code>)</th>
-    <th width="50%">Split Placement (<code>LiquidTabActionPlacement.split</code>)</th>
-  </tr>
-  <tr>
-    <td><img src="doc/images/together.png" alt="Together action placement" width="100%" /></td>
-    <td><img src="doc/images/split.png" alt="Split action placement" width="100%" /></td>
-  </tr>
-</table>
-
 Attach a standalone circular button (such as Create, Filter, or Search) alongside the navigation capsule:
 
 ```dart
@@ -547,17 +529,6 @@ LiquidTabItem.icon(
 ---
 
 ## Expandable Search
-
-<table>
-  <tr>
-    <th width="50%">Expanded Search</th>
-    <th width="50%">Search with Keyboard Visible</th>
-  </tr>
-  <tr>
-    <td><img src="doc/images/search.png" alt="Expanded search" width="100%" /></td>
-    <td><img src="doc/images/search_keyboard.png" alt="Search with keyboard visible" width="100%" /></td>
-  </tr>
-</table>
 
 Transform the navigation bar into an edge-to-edge floating search field:
 
@@ -631,17 +602,6 @@ LiquidTabAction.search(
 
 ## Adaptive Folding
 
-<table>
-  <tr>
-    <th width="50%">Circle Folded Shape (<code>LiquidFoldedShape.circle</code>)</th>
-    <th width="50%">Oval Folded Shape (<code>LiquidFoldedShape.oval</code>)</th>
-  </tr>
-  <tr>
-    <td><img src="doc/images/folding_circle.png" alt="Folded circle" width="100%" /></td>
-    <td><img src="doc/images/folding_oval.png" alt="Folded oval" width="100%" /></td>
-  </tr>
-</table>
-
 ### Automatic Folding (Recommended)
 
 When using `LiquidTabBarScaffold`, vertical scrolling in primary body scrollables automatically folds the bar into a compact pill showing only the active tab:
@@ -662,7 +622,7 @@ LiquidTabBarScaffold(
 
 `LiquidTabBarScaffold` automatically observes primary vertical body scrolling; no `NotificationListener` or controller management is required for normal layouts. Scrolling back up, reaching the top of content, or tapping the folded capsule smoothly unfolds the bar.
 
-### Manual Integration (Advanced Escape Hatch)
+### Manual integration
 
 For custom `Scaffold` layouts, multiple independent vertical scroll sources, or complex nested scrolling, forward notifications explicitly:
 
@@ -745,28 +705,17 @@ controller.armGovernor();
 
 ---
 
-## Migration from 0.2.x to 0.3.0
-
-Version `0.3.0` streamlines configuration into dedicated style objects:
-- Use `LiquidBarStyle` for outer navigation bar surfaces.
-- Use `LiquidDropletSurfaceStyle` for droplet visual appearance.
-- Use `DropletRefractionStyle` for optical refraction physics.
-- Use `shrinkOnScroll` instead of the removed `foldOnScroll`.
-- `LiquidTabItem.icon` now supports compile-time `const` construction.
-
-For comprehensive migration steps and before/after comparisons, see the [0.3.0 Migration Guide](doc/migration_0.3.0.md).
-
----
-
 ## Example Application
 
-The repository includes five focused interactive demonstrations:
+The repository includes interactive demonstrations:
 
+- **4-Style Comparison**: Normal and Glossy bars in light and dark themes.
 - **Basic Navigation**: Standard bottom bar with fluid spring droplet.
 - **Styling & Refraction**: Custom materials, light/dark themes, and refraction presets.
 - **Action Buttons**: Together and Split action placements.
 - **Search & Folding**: Expandable search morphing, circle/oval folding, and live RTL layout.
 - **Custom Icons Demo**: Standard `IconData`, custom SVG widgets, activeIcon switching, theme tinting vs original multi-color artwork, custom Search glyphs, and Search glyph sizing.
+- **Text Form Field**: Keyboard behavior with the bar visible.
 
 ```sh
 cd example
