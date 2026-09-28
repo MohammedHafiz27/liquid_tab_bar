@@ -84,6 +84,36 @@ void main() {
       expect(theme.actionStyle, LiquidTabActionStyle.dark);
     });
 
+    test('explicit default refraction does not trigger Glossy auto-tuning', () {
+      final implicit = LiquidTabBarTheme(
+        barStyle: LiquidBarStyle.glossy(),
+      ).resolve(Brightness.light);
+      final explicit = LiquidTabBarTheme(
+        barStyle: LiquidBarStyle.glossy(),
+        dropletRefraction: const DropletRefractionStyle(),
+      ).resolve(Brightness.light);
+
+      expect(
+          implicit.dropletRefraction, LiquidTabBarTheme.lightGlossyRefraction);
+      expect(explicit.dropletRefraction, const DropletRefractionStyle());
+
+      final reset = LiquidTabBarTheme(
+        barStyle: LiquidBarStyle.glossy(),
+        dropletRefraction: const DropletRefractionStyle(),
+      ).copyWith(usePresetDropletRefraction: true).resolve(Brightness.light);
+      expect(reset.dropletRefraction, LiquidTabBarTheme.lightGlossyRefraction);
+    });
+
+    test('copyWith can clear nullable theme overrides', () {
+      final cleared = const LiquidTabBarTheme(
+        maxWidth: 320,
+        brightness: Brightness.dark,
+      ).copyWith(clearMaxWidth: true, clearBrightness: true);
+
+      expect(cleared.maxWidth, isNull);
+      expect(cleared.brightness, isNull);
+    });
+
     test('pinned palettes and fully specified styles keep their values', () {
       final pinnedLight = LiquidTabBarTheme(
         brightness: Brightness.light,

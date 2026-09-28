@@ -241,7 +241,10 @@ LiquidTabItem.custom(
 )
 ```
 
-Tab items center the glyph within the bar's standard icon slot (`24.0`), with `FittedBox` containing and scaling artwork cleanly within the logical slot bounds without overflowing tab layout.
+Tab items center the glyph on the standard icon position. `iconSize` sets the
+glyph's available width and height for built-in icons and custom builders. The
+default `23.0` size preserves the calibrated layout; larger sizes may approach
+the label below the icon.
 
 ### Mixed Tab Bar Example
 
@@ -362,7 +365,7 @@ DropletRefractionStyle.medium() // default
 DropletRefractionStyle.strong()
 ```
 
-Medium and Strong bend content more deeply, with thin motion-only color fringes
+Medium (`0.60`, the default) and Strong (`1.00`) bend content more deeply, with thin motion-only color fringes
 where the curved lens crosses icons and labels. The effect is sampled from the
 backdrop and the resting droplet remains unchanged. Set `dispersion: 0` to keep
 the bend without RGB separation.
@@ -374,6 +377,10 @@ theme: const LiquidTabBarTheme(
   dropletRefraction: DropletRefractionStyle.strong(),
 ),
 ```
+
+When `dropletRefraction` is omitted, Normal and Glossy select their calibrated
+refraction values automatically. An explicitly supplied style is always used,
+including `const DropletRefractionStyle()`.
 
 #### Outer glass presets
 
@@ -461,7 +468,8 @@ dropletSurfaceStyle: LiquidDropletSurfaceStyle.light.copyWith(
 )
 ```
 
-Droplet shadow rendering consumes `color`, `blurRadius`, and `offset`.
+Droplet shadows use `LiquidDropletShadow`, which exposes the supported `color`,
+`blurRadius`, and `offset` fields.
 
 ### Optical Refraction
 
@@ -486,7 +494,7 @@ dropletRefraction: const DropletRefractionStyle.medium(),
 | **`baseHeight`** | Optical standoff depth for ray projection. |
 | **`dispersion`** | Chromatic dispersion (RGB wavelength split). |
 | **`specularStrength`** | Highlight intensity along the moving refractive boundary rim. |
-| **`refractionStrength`** | Master displacement multiplier (`0.0` disables, `1.0` standard). |
+| **`refractionStrength`** | Master displacement multiplier (`0.0` disables, `0.60` is the default Medium preset). |
 
 ---
 
@@ -595,6 +603,9 @@ LiquidTabAction.search(
 )
 ```
 
+When constructing `LiquidTabAction` directly, pass `search: LiquidTabBarSearch(...)`
+to make the action open search mode. A separate `isSearch` flag is unnecessary.
+
 #### Action Geometry (`size`) vs Glyph Dimensions (`iconSize`)
 
 `LiquidTabAction.search` strictly separates outer button geometry from glyph dimensions:
@@ -687,7 +698,7 @@ Because `LiquidTabBar` floats above content, underlying scroll views must reserv
 | **Custom Box/List** | Set `padding: LiquidTabBar.reservedPadding(context)`. |
 | **`CustomScrollView` Slivers** | Append `const SliverLiquidScrollPadding()` as the trailing sliver. |
 
-If a `Scaffold` has `extendBody: true` but the scroll view lacks reserved padding, `LiquidTabBar` emits an actionable warning in debug mode (silence via `warnOnMissingExtendBodyPadding: false` or `LiquidTabBar.disableExtendBodyWarning = true`).
+If a `Scaffold` has `extendBody: true` but the scroll view lacks reserved padding, `LiquidTabBar` emits an actionable warning in debug mode. Silence it per bar with `warnOnMissingExtendBodyPadding: false`.
 
 ---
 
@@ -738,6 +749,12 @@ The repository includes interactive demonstrations:
 cd example
 flutter run
 ```
+
+## API cleanup migration
+
+The pre-release API cleanup removes a few no-op or duplicate options and
+narrows droplet shadow configuration to the fields the renderer supports. See
+the [API cleanup migration guide](doc/api_cleanup_migration.md) for examples.
 
 ---
 

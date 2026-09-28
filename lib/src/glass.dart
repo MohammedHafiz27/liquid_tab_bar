@@ -68,6 +68,11 @@ ui.FragmentShader _dropletShader() =>
 /// Controls the Snell's-law physical glass lens model that refracts underlying
 /// icons and labels while the droplet is in motion.
 ///
+/// Optical displacement is available only in the shader glass tier. Blur keeps
+/// its neutral edge treatment and opaque keeps its solid fill without this
+/// refraction model. [specularStrength] also adjusts the neutral edge painter
+/// used by glass and blur tiers.
+///
 /// - At rest: optical refraction strictly fades to 0.0, leaving the droplet's
 ///   authentic material design (gradient, border, shadow, specular hairline)
 ///   completely intact without static distortion.
@@ -141,13 +146,15 @@ class DropletRefractionStyle {
         specularStrength = 0.25,
         refractionStrength = 1.00;
 
-  /// Optical bevel thickness (rim width) in logical pixels.
+  /// Optical bevel thickness (rim width) in logical pixels. Shader tier only.
   final double thickness;
 
   /// Index of refraction for the optical glass model (e.g. 1.50 for standard glass).
+  /// Shader tier only.
   final double refractiveIndex;
 
   /// Standoff optical depth (base height) in logical pixels for ray projection.
+  /// Shader tier only.
   final double baseHeight;
 
   /// Chromatic dispersion spread (0.0 = disabled, > 0 splits sampled RGB).
@@ -156,9 +163,12 @@ class DropletRefractionStyle {
   final double dispersion;
 
   /// Specular highlight intensity along the moving refractive boundary rim.
+  /// The shader uses the full value; the neutral edge painter clamps its
+  /// response to a limited range.
   final double specularStrength;
 
   /// Master multiplier for optical refraction displacement during motion.
+  /// Shader tier only; has no displacement effect at rest.
   ///
   /// - `0.0`: completely disables optical refraction (normal visuals only)
   /// - `0.6`: subtle refraction
@@ -166,12 +176,6 @@ class DropletRefractionStyle {
   /// - `1.6`: strong, more pronounced refraction
   /// - `2.0+`: very strong dramatic refraction
   final double refractionStrength;
-
-  /// Alias for [thickness] for consistency with [GlassStyle.rim].
-  double get rim => thickness;
-
-  /// Concise alias for [baseHeight].
-  double get depth => baseHeight;
 
   /// Creates a copy of this style with the given fields replaced.
   DropletRefractionStyle copyWith({
@@ -350,41 +354,53 @@ class GlassStyle {
     shadowOffset: Offset(0, 6),
   );
 
-  /// Width of the lensing rim.
+  /// Width of the lensing rim in the shader tier. The blur painter caps its
+  /// highlight width between 2 and 5 logical pixels.
   final double rim;
 
-  /// How steeply the rim's surface tilts.
+  /// How steeply the rim's surface tilts in the shader tier.
   final double curve;
 
-  /// Refraction displacement at the rim.
+  /// Refraction displacement at the rim in the shader tier.
   final double depth;
 
   /// Chromatic dispersion — how far red and blue are bent apart at the rim.
-  /// This is the soap-bubble fringe; the bar keeps it near zero, the lens
-  /// opens it with its speed.
+  /// This controls the outer bar's shader fringe directly. The moving lens has
+  /// its own motion-sensitive value in [DropletRefractionStyle.dispersion].
+  /// The blur painter approximates this with colored edge threads above 0.2.
   final double dispersion;
 
   /// Frost radius; 0 is clear glass.
   final double blur;
 
-  /// Saturation multiplier on what shows through.
+  /// Saturation multiplier on what shows through in shader and blur tiers.
   final double saturation;
 
-  /// Straight-alpha tint laid over the sampled page.
+  /// Straight-alpha tint laid over shader-sampled page pixels.
+  ///
+  /// The blur fallback uses `LiquidBarStyle.blurTint` instead.
   final Color tint;
 
-  /// Rim light strength.
+  /// Rim light strength in shader and blur tiers.
   final double specular;
 
-  /// Light direction, in the surface's own xy.
+  /// Light direction in the surface's own xy, used by shader and blur tiers.
   final Offset light;
 
-  /// Rim shade on the side facing away from the light.
+  /// Rim shade on the side facing away from the light in shader and blur tiers.
   final double edgeDark;
 
-  /// Drop shadow alpha; 0 for none.
+  /// Shader-tier drop shadow alpha; 0 for none.
+  ///
+  /// The blur and opaque tiers use `LiquidBarStyle.shadow`.
   final double shadow;
+
+  /// Shader-tier shadow softness in logical pixels. Used when [shadow] is
+  /// greater than zero.
   final double shadowBlur;
+
+  /// Shader-tier shadow offset in logical pixels. Used when [shadow] is
+  /// greater than zero.
   final Offset shadowOffset;
 
   GlassStyle copyWith({
@@ -484,6 +500,13 @@ class GlassStyle {
         shadowBlur,
         shadowOffset,
       );
+
+  @override
+  String toString() => 'GlassStyle('
+      'rim: $rim, curve: $curve, depth: $depth, dispersion: $dispersion, '
+      'blur: $blur, saturation: $saturation, tint: $tint, specular: $specular, '
+      'light: $light, edgeDark: $edgeDark, shadow: $shadow, '
+      'shadowBlur: $shadowBlur, shadowOffset: $shadowOffset)';
 }
 
 /// A capsule of [style] glass, [size] big with [radius] corners, rendered as a

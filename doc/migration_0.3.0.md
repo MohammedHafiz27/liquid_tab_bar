@@ -59,7 +59,7 @@ LiquidTabBarTheme(
 ```
 
 ```dart
-// 0.3.0
+// Current API; replaces BoxShadow from 0.3.0
 LiquidTabBarTheme(
   actionStyle: const LiquidTabActionStyle(
     selectedFill: Color(0x33FF375F),
@@ -131,10 +131,9 @@ Keep the three styling concepts separate:
 
 ## Droplet surface shadow consolidation
 
-The droplet surface shadow is now represented by one public `BoxShadow`.
-Only `color`, `blurRadius`, and `offset` are consumed by the renderer.
-`spreadRadius` and `blurStyle` are accepted by `BoxShadow` itself but are not
-currently consumed by droplet rendering.
+The 0.3.0 API grouped the droplet surface shadow under `BoxShadow`. The current
+API uses `LiquidDropletShadow`, which exposes exactly the supported properties:
+`color`, `blurRadius`, and `offset`.
 
 ```dart
 // Before 0.3.0
@@ -155,7 +154,7 @@ LiquidDropletSurfaceStyle(
   gradientTop: top,
   gradientBottom: bottom,
   borderColor: border,
-  shadow: BoxShadow(
+  shadow: LiquidDropletShadow(
     color: shadowColor,
     blurRadius: 10,
     offset: const Offset(0, 3),

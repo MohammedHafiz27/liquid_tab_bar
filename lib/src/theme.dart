@@ -45,10 +45,8 @@ class LiquidTabBarSearch {
     this.onClose,
     this.autofocus = true,
     this.textInputAction = TextInputAction.search,
-    this.showClearButton = true,
     this.clearOnClose = false,
     this.onTapOutside,
-    this.animationDuration = const Duration(milliseconds: 350),
   });
 
   final TextEditingController? controller;
@@ -61,7 +59,6 @@ class LiquidTabBarSearch {
   final VoidCallback? onClose;
   final bool autofocus;
   final TextInputAction textInputAction;
-  final bool showClearButton;
 
   /// Whether the search query text should be automatically cleared when
   /// the search field collapses. Defaults to `false`.
@@ -70,10 +67,6 @@ class LiquidTabBarSearch {
   /// Callback when a tap is detected outside the search input field.
   /// If not provided, defaults to unfocusing via [FocusManager.primaryFocus].
   final TapRegionCallback? onTapOutside;
-
-  /// The duration of the search bar expansion and collapse animation.
-  /// Defaults to 350 milliseconds.
-  final Duration animationDuration;
 }
 
 /// Visual styling for a separate action's selected marker.
@@ -136,7 +129,8 @@ class LiquidBadgeStyle {
   /// The typography style for the badge count or text.
   final TextStyle? textStyle;
 
-  /// The diameter/height of count or text badges (defaults to 18.0).
+  /// The minimum width and height of text badges (defaults to 18.0).
+  /// Text and padding may make the final badge larger.
   final double size;
 
   /// The diameter of dot badges when no count/text is set (defaults to 8.0).
@@ -272,7 +266,6 @@ class LiquidTabAction {
     this.iconSize,
     this.color,
     this.activeColor,
-    this.isSearch = false,
     this.search,
     this.customIcon,
     this.useThemeColor = true,
@@ -337,7 +330,6 @@ class LiquidTabAction {
     VoidCallback? onTap,
     TapRegionCallback? onTapOutside,
     bool clearOnClose = false,
-    Duration animationDuration = const Duration(milliseconds: 350),
   }) {
     return LiquidTabAction(
       icon: Builder(
@@ -370,7 +362,6 @@ class LiquidTabAction {
       size: size,
       iconSize: iconSize,
       tooltip: tooltip,
-      isSearch: true,
       customIcon: customIcon,
       useThemeColor: useThemeColor,
       searchIcon: icon,
@@ -386,7 +377,6 @@ class LiquidTabAction {
         autofocus: autofocus,
         onTapOutside: onTapOutside,
         clearOnClose: clearOnClose,
-        animationDuration: animationDuration,
       ),
       onTap: onTap,
     );
@@ -403,7 +393,6 @@ class LiquidTabAction {
   final double? iconSize;
   final Color? color;
   final Color? activeColor;
-  final bool isSearch;
   final LiquidTabBarSearch? search;
   final Widget? customIcon;
   final bool useThemeColor;
@@ -431,6 +420,7 @@ class LiquidTabItem {
         _customIcon = null,
         _customActiveIcon = null,
         _useThemeColor = true,
+        assert(iconSize > 0, 'iconSize must be greater than zero.'),
         assert(
           badge || badgeCount == null,
           'badgeCount cannot be set when badge is false. Set badge: true to display a badge with a count.',
@@ -459,6 +449,7 @@ class LiquidTabItem {
         _customActiveIcon = activeIcon,
         _useThemeColor = useThemeColor,
         _customIconBuilder = null,
+        assert(iconSize > 0, 'iconSize must be greater than zero.'),
         assert(
           badge || badgeCount == null,
           'badgeCount cannot be set when badge is false. Set badge: true to display a badge with a count.',
@@ -474,6 +465,10 @@ class LiquidTabItem {
   final Widget? _customIcon;
   final Widget? _customActiveIcon;
   final bool _useThemeColor;
+
+  /// The logical width and height available to this tab's glyph.
+  ///
+  /// Defaults to 23.0. This also constrains a custom [iconBuilder] result.
   final double iconSize;
   final LiquidTabIconBuilder? _customIconBuilder;
 
@@ -564,7 +559,60 @@ class LiquidTabItem {
   bool get hasBadge => badge;
 }
 
-/// Surface styling for the moving selection droplet on every material tier.
+/// The shadow controls supported by the moving selection droplet renderer.
+@immutable
+class LiquidDropletShadow {
+  const LiquidDropletShadow({
+    required this.color,
+    this.blurRadius = 0.0,
+    this.offset = Offset.zero,
+  }) : assert(blurRadius >= 0, 'blurRadius cannot be negative.');
+
+  final Color color;
+  final double blurRadius;
+  final Offset offset;
+
+  LiquidDropletShadow copyWith({
+    Color? color,
+    double? blurRadius,
+    Offset? offset,
+  }) =>
+      LiquidDropletShadow(
+        color: color ?? this.color,
+        blurRadius: blurRadius ?? this.blurRadius,
+        offset: offset ?? this.offset,
+      );
+
+  static LiquidDropletShadow lerp(
+    LiquidDropletShadow a,
+    LiquidDropletShadow b,
+    double t,
+  ) =>
+      LiquidDropletShadow(
+        color: Color.lerp(a.color, b.color, t)!,
+        blurRadius: ui.lerpDouble(a.blurRadius, b.blurRadius, t)!,
+        offset: Offset.lerp(a.offset, b.offset, t)!,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is LiquidDropletShadow &&
+      other.color == color &&
+      other.blurRadius == blurRadius &&
+      other.offset == offset;
+
+  @override
+  int get hashCode => Object.hash(color, blurRadius, offset);
+
+  @override
+  String toString() =>
+      'LiquidDropletShadow(color: $color, blurRadius: $blurRadius, offset: $offset)';
+}
+
+/// Surface styling for the moving selection droplet across material tiers.
+///
+/// The gradient, border, and shadow are used by glass and blur rendering;
+/// [opaqueFill] is used by opaque rendering.
 @immutable
 class LiquidDropletSurfaceStyle {
   const LiquidDropletSurfaceStyle({
@@ -580,7 +628,7 @@ class LiquidDropletSurfaceStyle {
     gradientTop: Color(0x12000000),
     gradientBottom: Color(0x0C000000),
     borderColor: Color(0x00000000),
-    shadow: BoxShadow(
+    shadow: LiquidDropletShadow(
       color: Color(0x0A000000),
       blurRadius: 4,
       offset: Offset(0, 1),
@@ -592,7 +640,7 @@ class LiquidDropletSurfaceStyle {
     gradientTop: Color(0x22FFFFFF),
     gradientBottom: Color(0x18FFFFFF),
     borderColor: Color(0x00FFFFFF),
-    shadow: BoxShadow(
+    shadow: LiquidDropletShadow(
       color: Color(0x14000000),
       blurRadius: 3,
       offset: Offset(0, 1),
@@ -604,7 +652,7 @@ class LiquidDropletSurfaceStyle {
     gradientTop: Color(0x29FFFFFF),
     gradientBottom: Color(0x1DFFFFFF),
     borderColor: Color(0x00FFFFFF),
-    shadow: BoxShadow(
+    shadow: LiquidDropletShadow(
       color: Color(0x18000000),
       blurRadius: 3,
       offset: Offset(0, 1),
@@ -617,10 +665,9 @@ class LiquidDropletSurfaceStyle {
   final Color borderColor;
   final double borderWidth;
 
-  /// The droplet shadow. Rendering consumes only [BoxShadow.color],
-  /// [BoxShadow.blurRadius], and [BoxShadow.offset]. `spreadRadius` and
-  /// `blurStyle` are currently ignored by the droplet renderer.
-  final BoxShadow shadow;
+  /// The droplet shadow. These are the three shadow properties the renderer
+  /// supports.
+  final LiquidDropletShadow shadow;
   final Color opaqueFill;
 
   LiquidDropletSurfaceStyle copyWith({
@@ -628,7 +675,7 @@ class LiquidDropletSurfaceStyle {
     Color? gradientBottom,
     Color? borderColor,
     double? borderWidth,
-    BoxShadow? shadow,
+    LiquidDropletShadow? shadow,
     Color? opaqueFill,
   }) =>
       LiquidDropletSurfaceStyle(
@@ -670,7 +717,7 @@ class LiquidDropletSurfaceStyle {
         gradientBottom: Color.lerp(a.gradientBottom, b.gradientBottom, t)!,
         borderColor: Color.lerp(a.borderColor, b.borderColor, t)!,
         borderWidth: ui.lerpDouble(a.borderWidth, b.borderWidth, t)!,
-        shadow: BoxShadow.lerp(a.shadow, b.shadow, t) ?? a.shadow,
+        shadow: LiquidDropletShadow.lerp(a.shadow, b.shadow, t),
         opaqueFill: Color.lerp(a.opaqueFill, b.opaqueFill, t)!,
       );
 
@@ -853,6 +900,9 @@ class LiquidBarStyle {
   final Color blurEdge;
   final Color opaqueFill;
   final Color opaqueEdge;
+
+  /// Outer bar shadows for blur and opaque rendering. The glass shader uses
+  /// `GlassStyle.shadow`, `shadowBlur`, and `shadowOffset` instead.
   final List<BoxShadow> shadow;
 
   LiquidBarStyle copyWith({
@@ -926,13 +976,16 @@ class LiquidBarStyle {
       );
 
   @override
-  String toString() => 'LiquidBarStyle(glass: $glass, blurTint: $blurTint, '
-      'opaqueFill: $opaqueFill, shadow: $shadow)';
+  String toString() => 'LiquidBarStyle('
+      'glass: $glass, blurTint: $blurTint, blurSheenTop: $blurSheenTop, '
+      'blurSheenBottom: $blurSheenBottom, blurEdge: $blurEdge, '
+      'opaqueFill: $opaqueFill, opaqueEdge: $opaqueEdge, shadow: $shadow)';
 }
 
 /// Every colour and number a [LiquidTabBar] draws with. Unspecified palette
 /// fields follow the ambient brightness when the bar builds; explicitly
 /// supplied fields keep their values.
+@immutable
 class LiquidTabBarTheme {
   static const lightGlossyRefraction = DropletRefractionStyle(
     thickness: 13.5,
@@ -971,7 +1024,7 @@ class LiquidTabBarTheme {
     LiquidTabActionStyle? actionStyle,
     LiquidDropletSurfaceStyle? dropletSurfaceStyle,
     LiquidBadgeStyle? badgeStyle,
-    this.dropletRefraction = const DropletRefractionStyle(),
+    DropletRefractionStyle? dropletRefraction,
     this.spring = defaultSpring,
     this.relax = defaultRelax,
     this.foldedShape = LiquidFoldedShape.circle,
@@ -989,7 +1042,9 @@ class LiquidTabBarTheme {
         _autoBarStyle = barStyle == null,
         _autoActionStyle = actionStyle == null,
         _autoDropletSurfaceStyle = dropletSurfaceStyle == null,
-        _autoBadgeStyle = badgeStyle == null;
+        _autoBadgeStyle = badgeStyle == null,
+        dropletRefraction = dropletRefraction ?? const DropletRefractionStyle(),
+        _autoDropletRefraction = dropletRefraction == null;
 
   /// A dark glass theme preset for dark mode backgrounds.
   const LiquidTabBarTheme.dark({
@@ -1000,7 +1055,7 @@ class LiquidTabBarTheme {
     this.actionStyle = LiquidTabActionStyle.dark,
     LiquidDropletSurfaceStyle? dropletSurfaceStyle,
     this.badgeStyle = const LiquidBadgeStyle(borderColor: Color(0xFF1C1C1E)),
-    this.dropletRefraction = darkNormalRefraction,
+    DropletRefractionStyle? dropletRefraction,
     this.spring = defaultSpring,
     this.relax = defaultRelax,
     this.foldedShape = LiquidFoldedShape.circle,
@@ -1013,7 +1068,9 @@ class LiquidTabBarTheme {
         _autoBarStyle = false,
         _autoActionStyle = false,
         _autoDropletSurfaceStyle = dropletSurfaceStyle == null,
-        _autoBadgeStyle = false;
+        _autoBadgeStyle = false,
+        dropletRefraction = dropletRefraction ?? darkNormalRefraction,
+        _autoDropletRefraction = dropletRefraction == null;
 
   const LiquidTabBarTheme._fromFields({
     required this.activeColor,
@@ -1035,12 +1092,14 @@ class LiquidTabBarTheme {
     required bool autoActionStyle,
     required bool autoDropletSurfaceStyle,
     required bool autoBadgeStyle,
+    required bool autoDropletRefraction,
   })  : _autoActiveColor = autoActiveColor,
         _autoInactiveColor = autoInactiveColor,
         _autoBarStyle = autoBarStyle,
         _autoActionStyle = autoActionStyle,
         _autoDropletSurfaceStyle = autoDropletSurfaceStyle,
-        _autoBadgeStyle = autoBadgeStyle;
+        _autoBadgeStyle = autoBadgeStyle,
+        _autoDropletRefraction = autoDropletRefraction;
 
   /// Automatically picks [LiquidTabBarTheme.dark] or [LiquidTabBarTheme] (light)
   /// matching the ambient app theme or platform brightness, using the app's
@@ -1090,7 +1149,7 @@ class LiquidTabBarTheme {
               : base.dropletSurfaceStyle)
           : dropletSurfaceStyle,
       badgeStyle: _autoBadgeStyle ? base.badgeStyle : badgeStyle,
-      dropletRefraction: dropletRefraction == const DropletRefractionStyle()
+      dropletRefraction: _autoDropletRefraction
           ? (glossy
               ? (dark ? darkGlossyRefraction : lightGlossyRefraction)
               : dropletRefraction)
@@ -1106,6 +1165,7 @@ class LiquidTabBarTheme {
       autoActionStyle: false,
       autoDropletSurfaceStyle: false,
       autoBadgeStyle: false,
+      autoDropletRefraction: false,
     );
   }
 
@@ -1139,8 +1199,13 @@ class LiquidTabBarTheme {
   final bool _autoActionStyle;
   final bool _autoDropletSurfaceStyle;
   final bool _autoBadgeStyle;
+  final bool _autoDropletRefraction;
 
   /// Optical refraction configuration for the moving selection droplet lens.
+  ///
+  /// When omitted, the value follows the Normal or Glossy bar preset. Supplying
+  /// a value explicitly always keeps that value, including the constructor
+  /// defaults.
   final DropletRefractionStyle dropletRefraction;
 
   /// The one spring the fold and the lens run on (damping ratio .84, about
@@ -1173,7 +1238,20 @@ class LiquidTabBarTheme {
     LiquidFoldedShape? foldedShape,
     double? maxWidth,
     Brightness? brightness,
+
+    /// Clears the current width cap and restores the tab-count-based width.
+    bool clearMaxWidth = false,
+
+    /// Clears the stored brightness pin.
+    bool clearBrightness = false,
+
+    /// Restores preset-based refraction resolution for the current Normal/Glossy style.
+    bool usePresetDropletRefraction = false,
   }) {
+    assert(
+      dropletRefraction == null || !usePresetDropletRefraction,
+      'Pass either dropletRefraction or usePresetDropletRefraction, not both.',
+    );
     return LiquidTabBarTheme._fromFields(
       activeColor: activeColor ?? this.activeColor,
       inactiveColor: inactiveColor ?? this.inactiveColor,
@@ -1182,12 +1260,14 @@ class LiquidTabBarTheme {
       actionStyle: actionStyle ?? this.actionStyle,
       dropletSurfaceStyle: dropletSurfaceStyle ?? this.dropletSurfaceStyle,
       badgeStyle: badgeStyle ?? this.badgeStyle,
-      dropletRefraction: dropletRefraction ?? this.dropletRefraction,
+      dropletRefraction: usePresetDropletRefraction
+          ? const DropletRefractionStyle()
+          : dropletRefraction ?? this.dropletRefraction,
       spring: spring ?? this.spring,
       relax: relax ?? this.relax,
       foldedShape: foldedShape ?? this.foldedShape,
-      maxWidth: maxWidth ?? this.maxWidth,
-      brightness: brightness ?? this.brightness,
+      maxWidth: clearMaxWidth ? null : maxWidth ?? this.maxWidth,
+      brightness: clearBrightness ? null : brightness ?? this.brightness,
       autoActiveColor: activeColor == null && _autoActiveColor,
       autoInactiveColor: inactiveColor == null && _autoInactiveColor,
       autoBarStyle: barStyle == null && _autoBarStyle,
@@ -1195,6 +1275,8 @@ class LiquidTabBarTheme {
       autoDropletSurfaceStyle:
           dropletSurfaceStyle == null && _autoDropletSurfaceStyle,
       autoBadgeStyle: badgeStyle == null && _autoBadgeStyle,
+      autoDropletRefraction: usePresetDropletRefraction ||
+          (dropletRefraction == null && _autoDropletRefraction),
     );
   }
 
@@ -1251,7 +1333,8 @@ class LiquidTabBarTheme {
         other._autoBarStyle == _autoBarStyle &&
         other._autoActionStyle == _autoActionStyle &&
         other._autoDropletSurfaceStyle == _autoDropletSurfaceStyle &&
-        other._autoBadgeStyle == _autoBadgeStyle;
+        other._autoBadgeStyle == _autoBadgeStyle &&
+        other._autoDropletRefraction == _autoDropletRefraction;
   }
 
   @override
@@ -1275,5 +1358,14 @@ class LiquidTabBarTheme {
         _autoActionStyle,
         _autoDropletSurfaceStyle,
         _autoBadgeStyle,
+        _autoDropletRefraction,
       ]);
+
+  @override
+  String toString() => 'LiquidTabBarTheme('
+      'activeColor: $activeColor, inactiveColor: $inactiveColor, '
+      'barStyle: $barStyle, actionStyle: $actionStyle, '
+      'dropletSurfaceStyle: $dropletSurfaceStyle, badgeStyle: $badgeStyle, '
+      'dropletRefraction: $dropletRefraction, spring: $spring, relax: $relax, '
+      'foldedShape: $foldedShape, maxWidth: $maxWidth, brightness: $brightness)';
 }

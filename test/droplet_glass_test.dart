@@ -412,10 +412,8 @@ void main() {
     test('DropletRefractionStyle defaults match calibrated optical values', () {
       const style = DropletRefractionStyle();
       expect(style.thickness, 13.0);
-      expect(style.rim, 13.0);
       expect(style.refractiveIndex, 1.50);
       expect(style.baseHeight, 24.0);
-      expect(style.depth, 24.0);
       expect(style.dispersion, 0.16);
       expect(style.specularStrength, 0.15);
       expect(style.refractionStrength, 0.60);

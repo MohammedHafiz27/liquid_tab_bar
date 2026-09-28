@@ -116,9 +116,6 @@ class LiquidTabBar extends StatefulWidget {
   /// Defaults to `true`. Has zero effect in release mode.
   final bool warnOnMissingExtendBodyPadding;
 
-  /// Globally disable the debug-mode warning for `extendBody: true` without scroll padding.
-  static bool disableExtendBodyWarning = false;
-
   /// Test hook to observe extendBody warning emissions.
   @visibleForTesting
   static void Function(String message)? onExtendBodyWarningForTesting;
@@ -550,12 +547,8 @@ class _LiquidTabBarState extends State<LiquidTabBar>
   /// changes.
   int? _hover;
 
-  Duration get _searchDuration =>
-      _effectiveSearch?.animationDuration ?? const Duration(milliseconds: 350);
-
   late final AnimationController _searchAnim = AnimationController(
     vsync: this,
-    duration: _searchDuration,
     value: 0.0,
   );
   late final TextEditingController _internalSearchController =
@@ -730,9 +723,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         _lens.value = v.toDouble();
       }
     }
-    if (kDebugMode &&
-        !LiquidTabBar.disableExtendBodyWarning &&
-        widget.warnOnMissingExtendBodyPadding) {
+    if (kDebugMode && widget.warnOnMissingExtendBodyPadding) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _checkExtendBodyPadding();
@@ -743,9 +734,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
   static final Set<int> _warnedRoutes = {};
 
   void _checkExtendBodyPadding() {
-    if (!kDebugMode ||
-        LiquidTabBar.disableExtendBodyWarning ||
-        !widget.warnOnMissingExtendBodyPadding) {
+    if (!kDebugMode || !widget.warnOnMissingExtendBodyPadding) {
       return;
     }
 
@@ -841,8 +830,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         '  4. Scaffold wrapper: Use `LiquidTabBarScaffold` instead of `Scaffold`.\n'
         '\n'
         'To silence this warning:\n'
-        '  Set `warnOnMissingExtendBodyPadding: false` on LiquidTabBar or set\n'
-        '  `LiquidTabBar.disableExtendBodyWarning = true`.\n'
+        '  Set `warnOnMissingExtendBodyPadding: false` on LiquidTabBar.\n'
         '================================================================================\n';
 
     LiquidTabBar.onExtendBodyWarningForTesting?.call(message);
@@ -872,7 +860,6 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     super.didUpdateWidget(old);
     _listen();
     _relax.duration = _theme.relax;
-    _searchAnim.duration = _searchDuration;
     _nav.shrinkOnScroll = widget.shrinkOnScroll;
     if (!widget.shrinkOnScroll && _nav.minimized) {
       _nav.expand();
@@ -911,7 +898,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
 
   void _onNav() {
     _spring(_fold, _nav.minimized ? 1 : 0);
-    if (_effectiveAction?.isSearch == true || _effectiveSearch != null) {
+    if (_effectiveSearch != null) {
       if (_nav.isSearching != _isSearching) {
         _setSearchMode(_nav.isSearching, clearText: _nav.clearTextOnClose);
       }
@@ -1840,9 +1827,10 @@ class _LiquidTabBarState extends State<LiquidTabBar>
       )!;
       final isIconSelected = effectiveCoverage >= 0.5;
 
+      final glyphSize = item.iconSize;
       final iconOnly = SizedBox(
-        width: LiquidTabBar._iconSize,
-        height: LiquidTabBar._iconSize,
+        width: glyphSize,
+        height: glyphSize,
         child: item.iconBuilder(color, isIconSelected),
       );
       Widget glyph = iconOnly;
@@ -1944,10 +1932,10 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         }
         badgeSlots.add(
           Positioned(
-            left: cx - LiquidTabBar._iconSize / 2,
-            top: cy - LiquidTabBar._iconSize / 2,
-            width: LiquidTabBar._iconSize,
-            height: LiquidTabBar._iconSize,
+            left: cx - glyphSize / 2,
+            top: cy - glyphSize / 2,
+            width: glyphSize,
+            height: glyphSize,
             child: IgnorePointer(child: badgeStack),
           ),
         );
@@ -1971,10 +1959,10 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            left: g.slotW / 2 - LiquidTabBar._iconSize / 2,
-            top: cy - LiquidTabBar._iconSize / 2,
-            width: LiquidTabBar._iconSize,
-            height: LiquidTabBar._iconSize,
+            left: g.slotW / 2 - glyphSize / 2,
+            top: cy - glyphSize / 2,
+            width: glyphSize,
+            height: glyphSize,
             child: glyph,
           ),
           Positioned(
@@ -2747,8 +2735,12 @@ class _SeparateActionButtonState extends State<_SeparateActionButton> {
                       textInputAction: widget.search?.textInputAction ??
                           TextInputAction.search,
                       onTapOutside: (event) {
-                        widget.search?.onTapOutside?.call(event);
-                        FocusManager.instance.primaryFocus?.unfocus();
+                        final callback = widget.search?.onTapOutside;
+                        if (callback != null) {
+                          callback(event);
+                        } else {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        }
                       },
                       onChanged: (val) {
                         setState(() {});
@@ -2848,7 +2840,7 @@ class _SeparateActionButtonState extends State<_SeparateActionButton> {
               if (_pressed) {
                 setState(() => _pressed = false);
                 widget.haptic?.call();
-                if (act.isSearch || widget.search != null) {
+                if (widget.search != null) {
                   widget.onSearchOpen?.call();
                 }
                 act.onTap?.call();
@@ -2874,7 +2866,7 @@ class _SeparateActionButtonState extends State<_SeparateActionButton> {
               : (act.tooltip ?? 'Action'),
           onTap: !isSearching
               ? () {
-                  if (act.isSearch || widget.search != null) {
+                  if (widget.search != null) {
                     widget.onSearchOpen?.call();
                   }
                   act.onTap?.call();

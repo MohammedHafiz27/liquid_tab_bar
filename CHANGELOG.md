@@ -1,5 +1,15 @@
 ## 2.0.0 - Unreleased
 
+- Cleaned up the pre-release public API: removed ineffective search options
+  (`showClearButton`, `animationDuration`), the duplicate search marker
+  (`LiquidTabAction.isSearch`), duplicate droplet refraction aliases, and the
+  global debug warning switch. See `doc/api_cleanup_migration.md` for source
+  migrations.
+- Added `LiquidDropletShadow` with only the supported droplet shadow fields,
+  made explicit default refraction styles remain explicit, enabled requested
+  tab icon sizes above the default slot, and added nullable theme reset options.
+- Corrected API documentation and debug output without changing calibrated
+  Normal, Glossy, Light, or Dark rendering defaults.
 - Brightened Light Glossy with a wider polished bevel and clearer frost while
   preserving Dark Glossy. Increased Medium/Strong droplet optical depth and
   spectral separation, then narrowed the color fringe for a more natural lens.

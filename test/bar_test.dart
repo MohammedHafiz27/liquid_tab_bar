@@ -1135,7 +1135,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping outside search TextField removes focus and dismisses keyboard',
+      'custom onTapOutside callback owns outside-tap focus behavior',
       (tester) async {
         bool outsideTapped = false;
 
@@ -1182,11 +1182,44 @@ void main() {
         await tester.tap(find.text('Body Content Area'));
         await tester.pumpAndSettle();
 
-        // Custom callback invoked and focus removed
+        // The callback is invoked and may choose whether to unfocus.
         expect(outsideTapped, isTrue);
-        expect(focusNode.hasFocus, isFalse);
+        expect(focusNode.hasFocus, isTrue);
       },
     );
+
+    testWidgets('outside taps unfocus search when no callback is supplied', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: const Center(child: Text('Outside search')),
+            bottomNavigationBar: LiquidTabBar(
+              material: LiquidTabBarMaterial.opaque,
+              items: [
+                LiquidTabItem.icon(label: 'Home', icon: Icons.home),
+                LiquidTabItem.icon(label: 'Library', icon: Icons.library_music),
+              ],
+              selectedIndex: 0,
+              separateAction: LiquidTabAction.search(hintText: 'Search...'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.pumpAndSettle();
+
+      final field = find.byType(TextField);
+      final focusNode = tester.widget<TextField>(field).focusNode!;
+      expect(focusNode.hasFocus, isTrue);
+
+      await tester.tap(find.text('Outside search'));
+      await tester.pumpAndSettle();
+
+      expect(focusNode.hasFocus, isFalse);
+    });
 
     testWidgets('expanded search keeps only the outer close affordance', (
       tester,
@@ -2241,7 +2274,7 @@ void main() {
       expect(submittedQuery, equals('Liquid Glass'));
     });
 
-    testWidgets('LiquidTabBarSearch respects custom animationDuration', (
+    testWidgets('a search configuration makes an action search-capable', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -2251,22 +2284,18 @@ void main() {
               material: LiquidTabBarMaterial.opaque,
               items: testItems,
               selectedIndex: 0,
-              separateAction: LiquidTabAction.search(
-                animationDuration: const Duration(milliseconds: 500),
-                hintText: 'Search...',
+              separateAction: LiquidTabAction(
+                icon: const Icon(Icons.search_rounded),
+                search: const LiquidTabBarSearch(
+                  hintText: 'Search...',
+                ),
               ),
             ),
           ),
         ),
       );
 
-      // Tap search to start animating
       await tester.tap(find.byIcon(Icons.search_rounded), warnIfMissed: false);
-      await tester.pump();
-
-      // At 250ms (halfway), the animation is mid-flight
-      await tester.pump(const Duration(milliseconds: 250));
-      // Settle the remainder of 500ms
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);

@@ -90,7 +90,7 @@ void main() {
       gradientTop: Color(0xFF123456),
       gradientBottom: Color(0xFF654321),
       borderColor: Color(0xFFABCDEF),
-      shadow: BoxShadow(
+      shadow: LiquidDropletShadow(
         color: Color(0xFF101010),
         blurRadius: 10,
         offset: Offset(0, 3),
@@ -122,7 +122,7 @@ void main() {
       gradientTop: Color(0xFF123456),
       gradientBottom: Color(0xFF654321),
       borderColor: Color(0xFFABCDEF),
-      shadow: BoxShadow(
+      shadow: LiquidDropletShadow(
         color: Color(0xFF101010),
         blurRadius: 10,
         offset: Offset(0, 3),

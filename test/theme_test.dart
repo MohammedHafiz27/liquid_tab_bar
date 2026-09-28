@@ -106,10 +106,12 @@ void main() {
           const Color(0x29FFFFFF));
     });
 
-    test('copyWith, lerp, equality and hashCode include BoxShadow', () {
+    test(
+        'copyWith, lerp, equality and hashCode include supported shadow fields',
+        () {
       const a = LiquidDropletSurfaceStyle.light;
       final b = a.copyWith(
-        shadow: const BoxShadow(
+        shadow: const LiquidDropletShadow(
           color: Color(0xFF123456),
           blurRadius: 20,
           offset: Offset(2, 4),
@@ -416,6 +418,37 @@ void main() {
       expect(item.label, 'Inbox');
       expect(item.badge, isTrue);
       expect(item.hasBadge, isTrue);
+    });
+
+    testWidgets('iconSize controls the rendered glyph dimensions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: LiquidTabBar(
+              material: LiquidTabBarMaterial.opaque,
+              selectedIndex: 0,
+              items: const [
+                LiquidTabItem.icon(
+                  label: 'Home',
+                  icon: Icons.home,
+                  iconSize: 32,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byIcon(Icons.home)), const Size(32, 32));
+    });
+
+    test('rejects a non-positive iconSize', () {
+      expect(
+        () => LiquidTabItem.icon(label: 'Home', icon: Icons.home, iconSize: 0),
+        throwsAssertionError,
+      );
     });
 
     test('supports badgeCount, customization, and formats large numbers', () {
