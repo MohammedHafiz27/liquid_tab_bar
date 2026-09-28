@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // flutter_svg is used by the example app only.
 // liquid_tab_bar receives this as a normal Flutter Widget.
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:liquid_tab_bar/droplet.dart';
+import 'package:liquid_tab_bar/liquid_tab_bar.dart';
 
 import 'showcase_content.dart';
 

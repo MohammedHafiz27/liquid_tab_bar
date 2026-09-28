@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_tab_bar/droplet.dart';
+import 'package:liquid_tab_bar/liquid_tab_bar.dart';
 
 // Exercise the compiled shader with an image sampler, without requiring an
 // Impeller-only BackdropFilter in the headless test renderer.
@@ -11,7 +11,7 @@ void main() {
       (tester) async {
     await tester.runAsync(() async {
       final program = await ui.FragmentProgram.fromAsset(
-        'assets/shaders/droplet/droplet_glass.frag',
+        'assets/shaders/droplet_glass.frag',
       );
       const width = 240;
       const height = 100;
