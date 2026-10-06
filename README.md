@@ -5,7 +5,7 @@ search, action buttons, badges, and a compact shape while scrolling.
 
 Package version in this repository: `2.0.0`
 
-[![pub package](https://img.shields.io/pub/v/liquid_tab_bar.svg)](https://pub.dev/packages/liquid_tab_bar)
+[![pub version 2.0.0](https://img.shields.io/badge/pub-2.0.0-blue.svg)](https://pub.dev/packages/liquid_tab_bar)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
@@ -129,248 +129,91 @@ adds bottom space so the last list item stays visible, and handles scroll
 folding. `LiquidGlass.load()` prepares the shader; the bar falls back to blur
 when shader glass is unavailable.
 
+For multiple destinations, keep one bar above an `IndexedStack` so the lens
+can travel between pages.
+
 ---
 
 ## Custom Icons
 
-`LiquidTabBar` supports both standard Material/Cupertino `IconData` and arbitrary custom Flutter `Widget`s (such as SVGs, raster images, custom painters, and animated widgets).
+Use standard icons or any Flutter widget, including SVGs, images, and custom
+painters. `LiquidTabItem.icon` is the concise option for Material icons;
+`LiquidTabItem.custom` accepts a widget and an optional `activeIcon`.
 
-<img src="doc/images/custom.png" alt="LiquidTabBar with custom SVG icons and a purple theme on iOS" width="300" />
-
-### Standard Icons (`IconData`)
-
-For standard glyphs, use the compile-time `const` constructor `LiquidTabItem.icon`:
-
-```dart
-const LiquidTabItem.icon(
-  label: 'Home',
-  icon: Icons.home_outlined,
-  activeIcon: Icons.home_rounded,
-)
-```
-
-`LiquidTabItem.icon` remains the default, first-class workflow for standard icons.
-
-### Custom Widget Icons
-
-Use `LiquidTabItem.custom` to render custom widgets, such as vector icons via `flutter_svg`, raster artwork via `Image.asset`, or custom painters:
-
-```dart
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:liquid_tab_bar/liquid_tab_bar.dart';
-
-LiquidTabItem.custom(
-  label: 'Explore',
-  icon: SvgPicture.asset(
-    'assets/icons/explore.svg',
-  ),
-)
-```
-
-> [!NOTE]
-> `liquid_tab_bar` does **not** depend on or bundle `flutter_svg` or any specific image library. The package receives a standard Flutter `Widget`; the host application owns its asset packages and widget construction.
-
-Arbitrary Flutter widgets are fully supported:
-
-```dart
-LiquidTabItem.custom(
-  label: 'Photos',
-  icon: Image.asset('assets/photos.png'),
-)
-```
-
-### Custom Active Icons
-
-Supply `activeIcon` to specify an alternate widget when the tab becomes selected:
-
-```dart
-LiquidTabItem.custom(
-  label: 'Profile',
-  icon: SvgPicture.asset('assets/icons/profile_outline.svg'),
-  activeIcon: SvgPicture.asset('assets/icons/profile_filled.svg'),
-)
-```
-
-Custom active icons follow the exact same selection threshold (`coverage >= 0.5`) and animated spring transitions as standard `IconData` items.
-
-### Theme Color Tinting (`useThemeColor`)
-
-By default, `useThemeColor: true` is enabled. For custom widgets, this dynamically tints the artwork using the bar's resolved theme colors:
-
-```text
-inactiveColor
-   ↓ (spring droplet interpolation)
-activeColor
-```
-
-```dart
-LiquidTabItem.custom(
-  label: 'Favorite',
-  icon: SvgPicture.asset('assets/icons/heart.svg'),
-  useThemeColor: true, // Default: tints with activeColor/inactiveColor
-)
-```
-
-### Preserving Multi-Color Artwork
-
-When `useThemeColor: true`, custom artwork is tinted uniformly via `BlendMode.srcIn`. For multi-color logos, badges, or brand artwork, set `useThemeColor: false` to preserve the original colors in both selected and unselected states:
-
-```dart
-LiquidTabItem.custom(
-  label: 'Brand',
-  icon: SvgPicture.asset('assets/icons/brand_multicolor.svg'),
-  useThemeColor: false, // Preserves original multi-color artwork
-)
-```
-
-> [!TIP]
-> - **`useThemeColor: true`**: Recommended for monochrome vector icons that should follow your bar's active and inactive theme colors.
-> - **`useThemeColor: false`**: Recommended for multi-color logos, user avatars, or artwork whose distinct color regions must remain intact.
-> 
-> Even with `useThemeColor: false`, the tab item still fully participates in layout, droplet movement, fold transitions, badges, and optical refraction.
-
-### Custom Icon Sizing
-
-Control glyph layout size with `iconSize:` (defaults to `23.0`):
+<img src="doc/images/custom.png" alt="LiquidTabBar with custom icons and a purple theme" width="300" />
 
 ```dart
 LiquidTabItem.custom(
   label: 'Explore',
   icon: SvgPicture.asset('assets/icons/explore.svg'),
-  iconSize: 20.0,
+  activeIcon: SvgPicture.asset('assets/icons/explore_filled.svg'),
+  iconSize: 22,
+  useThemeColor: false, // preserve multicolor artwork
 )
 ```
 
-Tab items center the glyph on the standard icon position. `iconSize` sets the
-glyph's available width and height for built-in icons and custom builders. The
-default `23.0` size preserves the calibrated layout; larger sizes may approach
-the label below the icon.
+Custom widgets are tinted with the theme's selected and unselected colors by
+default. Set `useThemeColor: false` to keep their original colors. The package
+accepts ordinary widgets and does not bundle an SVG or image library.
 
-### Mixed Tab Bar Example
+### Keyboard behavior
 
-You can seamlessly combine standard icons, custom SVG tabs, and custom search actions in a single bar:
-
-```dart
-LiquidTabBar(
-  selectedIndex: selectedIndex,
-  onSelected: (index) => setState(() => selectedIndex = index),
-  items: [
-    const LiquidTabItem.icon(
-      label: 'Home',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-    ),
-    LiquidTabItem.custom(
-      label: 'Explore',
-      icon: SvgPicture.asset('assets/icons/explore.svg'),
-    ),
-    LiquidTabItem.custom(
-      label: 'Profile',
-      icon: SvgPicture.asset('assets/icons/profile_outline.svg'),
-      activeIcon: SvgPicture.asset('assets/icons/profile_filled.svg'),
-    ),
-  ],
-  separateAction: LiquidTabAction.search(
-    customIcon: SvgPicture.asset('assets/icons/search.svg'),
-  ),
-)
-```
-
-*(This example assumes your host application has imported its chosen SVG renderer, such as `flutter_svg`.)*
-
-### Keyboard Behavior
-
-By default, the bar moves above the onscreen keyboard. Set
-`liftAboveKeyboard: false` to keep it at the bottom while ordinary text fields
-are focused. Also set the host `Scaffold`'s `resizeToAvoidBottomInset: false`
-so the keyboard can cover the bar. The built-in search action still moves the
-bar above the keyboard while searching.
-
-```dart
-Scaffold(
-  resizeToAvoidBottomInset: false,
-  bottomNavigationBar: LiquidTabBar(
-    liftAboveKeyboard: false,
-    // ...
-  ),
-)
-```
+The bar moves above the keyboard by default. To keep it at the bottom for
+ordinary text fields, set `liftAboveKeyboard: false` and
+`resizeToAvoidBottomInset: false` on the host `Scaffold`. Built-in search still
+moves above the keyboard.
 
 ---
 
 ## Styling & Optics
 
-Customize outer materials, brand accents, and droplet fills using `LiquidTabBarTheme`. When omitted, styling automatically adapts to ambient light/dark brightness:
+`LiquidTabBarTheme` controls the selected and unselected colors, outer bar,
+selected lens, and refraction. It follows the app's light or dark brightness by
+default. Use `LiquidTabBarTheme.adaptive(context)` to also use the app's primary
+color, or pin a palette with `LiquidTabBarTheme.dark()`.
 
 ```dart
-LiquidTabBar(
-  theme: LiquidTabBarTheme.adaptive(context).copyWith(
-    activeColor: const Color(0xFF007AFF),
-  ),
-  // ...
-)
+theme: LiquidTabBarTheme.adaptive(context).copyWith(
+  activeColor: const Color(0xFF007AFF),
+  barStyle: LiquidBarStyle.glossy(),
+  dropletRefraction: const DropletRefractionStyle.medium(),
+),
 ```
 
-The default light and dark themes use a translucent capsule, neutral gray
-selection, and a soft reflective rim. Motion-only droplet refraction bends the
-icons and labels underneath the moving lens; its RGB dispersion creates fine
-color fringes at high contrast edges. The blur fallback keeps the same surface
-palette and selection styling, while high-contrast mode uses the opaque tier.
+### Material tiers
 
-`const LiquidTabBarTheme()` follows the ambient light/dark brightness, including
-when only some style fields are supplied. Use
-`const LiquidTabBarTheme(brightness: Brightness.light)` to pin light styling or
-`const LiquidTabBarTheme.dark()` to pin dark styling. `adaptive(context)` also
-uses your app's primary color for the selected icon and label.
-
-### Material Tiers
-
-`LiquidTabBar` supports three rendering tiers, selectable via `material:`:
-
-| Tier | Description |
+| Tier | Rendering |
 |:---|:---|
-| **`auto`** *(default)* | Uses `glass` when Impeller is active and performance is smooth; falls back to `blur` on legacy renderers or when the frame governor detects slow frames. |
-| **`glass`** | GPU fragment shader with Snell's-law refraction, specular rim caustics, and backdrop sampling (requires Impeller). |
-| **`blur`** | Cross-platform frosted glass with dual-pass backdrop filtering and rim highlights. |
-| **`opaque`** | High-contrast solid-fill capsule for accessibility or power saving. |
+| `auto` (default) | Uses shader glass when supported; otherwise falls back to blur. |
+| `glass` | Fragment shaders sample and refract the backdrop (Impeller required). |
+| `blur` | Cross-platform frosted glass. |
+| `opaque` | Solid, high-contrast surface. |
 
-### Presets
+### Glossy and light/dark styles
 
-#### Glossy capsule
+`LiquidBarStyle.glossy()` follows ambient brightness. Pass `brightness:` to pin
+it. Glossy adds a clearer bevel while retaining the same glass family.
 
-`LiquidBarStyle.glossy()` follows the ambient light/dark brightness. Passing
-`brightness:` pins a specific glossy palette.
-
-| Glossy light | Glossy dark |
+| Glossy Light | Glossy Dark |
 |:---:|:---:|
-| <img src="doc/images/glossy_light.png" alt="Glossy light LiquidTabBar on iOS" width="300" /> | <img src="doc/images/glossy_dark.png" alt="Glossy dark LiquidTabBar on iOS" width="300" /> |
-
-Opt into a brighter neutral bevel, luminous tint, and clearer backdrop colors:
+| <img src="doc/images/glossy_light.png" alt="Glossy light bar" width="300" /> | <img src="doc/images/glossy_dark.png" alt="Glossy dark bar" width="300" /> |
 
 ```dart
 theme: LiquidTabBarTheme(barStyle: LiquidBarStyle.glossy()),
 ```
 
-The preset styles the bar and separate action buttons with matching light/dark
-palettes and a blur fallback. Light Glossy has brighter white reflections and
-less frost; Dark Glossy keeps its translucent charcoal finish.
-Try **Glossy** in the **Styling & Refraction** demo.
+Outer bar appearance is set by `LiquidBarStyle` and `GlassStyle`. Presets
+include `frosted`, `prismaticCaustics`, `clearCrystal`, and `deepRefraction`.
+The selected lens surface is configured independently through
+`LiquidDropletSurfaceStyle`, including its gradient, border, and
+`LiquidDropletShadow`.
 
-#### Refraction presets
+### Droplet refraction
 
-```dart
-DropletRefractionStyle.none()
-DropletRefractionStyle.subtle()
-DropletRefractionStyle.medium() // default
-DropletRefractionStyle.strong()
-```
-
-Medium (`0.60`, the default) and Strong (`1.00`) bend content more deeply, with thin motion-only color fringes
-where the curved lens crosses icons and labels. The effect is sampled from the
-backdrop and the resting droplet remains unchanged. Set `dispersion: 0` to keep
-the bend without RGB separation.
-
-Example:
+The moving lens bends the icons and labels behind it; displacement and color
+separation fade at rest. `DropletRefractionStyle` presets are `none()`,
+`subtle()`, `medium()` (default), and `strong()`. Set `dispersion: 0` to disable
+RGB separation while retaining refraction.
 
 ```dart
 theme: const LiquidTabBarTheme(
@@ -378,125 +221,10 @@ theme: const LiquidTabBarTheme(
 ),
 ```
 
-When `dropletRefraction` is omitted, Normal and Glossy select their calibrated
-refraction values automatically. An explicitly supplied style is always used,
-including `const DropletRefractionStyle()`.
-
-#### Outer glass presets
-
-```dart
-GlassStyle.frosted
-GlassStyle.prismaticCaustics
-GlassStyle.clearCrystal
-GlassStyle.deepRefraction
-```
-
-Use an outer glass preset through `LiquidBarStyle`:
-
-```dart
-theme: LiquidTabBarTheme(
-  barStyle: LiquidBarStyle.light.copyWith(
-    glass: GlassStyle.prismaticCaustics,
-  ),
-),
-```
-
-#### Light and dark presets
-
-```dart
-LiquidTabBarTheme()
-LiquidTabBarTheme.dark()
-LiquidTabBarTheme.adaptive(context)
-
-LiquidBarStyle.light
-LiquidBarStyle.dark
-
-LiquidDropletSurfaceStyle.light
-LiquidDropletSurfaceStyle.dark
-
-LiquidTabActionStyle.light
-LiquidTabActionStyle.dark
-```
-
-The normal default is:
-
-```dart
-LiquidTabBarTheme()
-```
-
-For most applications, use the theme that follows the surrounding app theme:
-
-```dart
-theme: LiquidTabBarTheme.adaptive(context),
-```
-
-#### Material modes
-
-```dart
-LiquidTabBarMaterial.auto    // default
-LiquidTabBarMaterial.glass
-LiquidTabBarMaterial.blur
-LiquidTabBarMaterial.opaque
-```
-
-#### Folded shapes
-
-```dart
-LiquidFoldedShape.circle // default
-LiquidFoldedShape.oval
-```
-
-### Glass & Droplet Surfaces
-
-Outer bar glass is configured via `GlassStyle`. Curated presets include:
-- `GlassStyle.frosted`: Balanced diffusion and gentle rim specular (default).
-- `GlassStyle.prismaticCaustics`: Vivid chromatic dispersion (`0.32`) with boosted specular highlights (`0.65`).
-- `GlassStyle.clearCrystal`: Zero-blur transparent crystal.
-- `GlassStyle.deepRefraction`: Heavy optical slab with deep displacement.
-
-```dart
-barStyle: LiquidBarStyle.light.copyWith(
-  glass: GlassStyle.prismaticCaustics,
-)
-```
-
-The visible surface appearance of the moving droplet (gradient, border, shadow, and opaque fill) is configured via `LiquidDropletSurfaceStyle`:
-
-```dart
-dropletSurfaceStyle: LiquidDropletSurfaceStyle.light.copyWith(
-  borderWidth: 1.0,
-)
-```
-
-Droplet shadows use `LiquidDropletShadow`, which exposes the supported `color`,
-`blurRadius`, and `offset` fields.
-
-### Optical Refraction
-
-The moving droplet features physical optical refraction that dynamically distorts underlying icons and labels during motion. At rest, refraction displacement returns strictly to `0.0` to preserve crisp text and icon legibility.
-
-Curated presets:
-- `DropletRefractionStyle.none()`: Disables optical displacement completely.
-- `DropletRefractionStyle.subtle()`: Gentle boundary displacement.
-- `DropletRefractionStyle.medium()`: Balanced default refraction.
-- `DropletRefractionStyle.strong()`: Pronounced curvature and deeper displacement.
-
-```dart
-dropletRefraction: const DropletRefractionStyle.medium(),
-```
-
-**Advanced optical controls**:
-
-| Parameter | Purpose |
-|:---|:---|
-| **`thickness`** | Optical rim bevel width in logical pixels. |
-| **`refractiveIndex`** | Snell optical index of refraction (1.50 = standard glass). |
-| **`baseHeight`** | Optical standoff depth for ray projection. |
-| **`dispersion`** | Chromatic dispersion (RGB wavelength split). |
-| **`specularStrength`** | Highlight intensity along the moving refractive boundary rim. |
-| **`refractionStrength`** | Master displacement multiplier (`0.0` disables, `0.60` is the default Medium preset). |
-
----
+Advanced controls are `thickness` (bevel width), `refractiveIndex`, `baseHeight`
+(optical depth), `dispersion`, `specularStrength`, and `refractionStrength`.
+When omitted, the theme selects calibrated Normal or Glossy values. Explicit
+values are respected.
 
 ## Actions & Placement
 
@@ -551,80 +279,24 @@ LiquidTabItem.icon(
 
 ## Expandable Search
 
-<img src="doc/images/search.png" alt="Expanded LiquidTabBar search field on iOS" width="300" />
+<img src="doc/images/search.png" alt="Expanded LiquidTabBar search field" width="300" />
 
-Transform the navigation bar into an edge-to-edge floating search field:
-
-```dart
-separateAction: LiquidTabAction.search(
-  hintText: 'Search notes, files...',
-  clearOnClose: true,
-  onChanged: (query) => onFilter(query),
-  onSubmitted: (query) => performSearch(query),
-  onClose: () => onSearchClosed(),
-),
-```
-
-- **Keyboard-aware**: Automatically floats above the on-screen software keyboard without artificial layout height jumps.
-- **Programmatic & gesture control**: Dismisses on close tap or Android back button, and can be driven programmatically via `controller.openSearch()` and `controller.closeSearch()`.
-
-### Custom Search Icon
-
-Pass `customIcon` to supply a custom widget (e.g. SVG or image) for the Search action:
+Add an edge-to-edge search field with a separate search action:
 
 ```dart
 separateAction: LiquidTabAction.search(
-  hintText: 'Search notes, files...',
-  customIcon: SvgPicture.asset('assets/icons/search.svg'),
+  hintText: 'Search notes…',
   clearOnClose: true,
-  onChanged: (query) => onFilter(query),
+  onChanged: filterResults,
+  onSubmitted: submitSearch,
+  customIcon: SvgPicture.asset('assets/icons/search.svg'), // optional
 ),
 ```
 
-The custom icon source is shared across both Search presentation states:
-- **Closed circular action**: Displays the custom widget with standard tap scale animations and theme color tinting.
-- **Expanded Search field**: Displays the exact same custom widget as the leading icon in the search input field rather than reverting to `Icons.search_rounded`.
-
-#### Search Theme Tinting & Original Colors
-
-Like custom tab items, `LiquidTabAction.search` supports `useThemeColor`:
-
-```dart
-// Theme-tinted (default): tints with button color when closed, inactiveColor when expanded
-LiquidTabAction.search(
-  customIcon: SvgPicture.asset('assets/icons/search.svg'),
-  useThemeColor: true,
-)
-
-// Original colors: preserves multi-color artwork while maintaining smooth open/close fade
-LiquidTabAction.search(
-  customIcon: SvgPicture.asset('assets/icons/search_multicolor.svg'),
-  useThemeColor: false,
-)
-```
-
-When constructing `LiquidTabAction` directly, pass `search: LiquidTabBarSearch(...)`
-to make the action open search mode. A separate `isSearch` flag is unnecessary.
-
-#### Action Geometry (`size`) vs Glyph Dimensions (`iconSize`)
-
-`LiquidTabAction.search` strictly separates outer button geometry from glyph dimensions:
-
-| Property | Purpose | Default |
-|:---|:---|:---|
-| **`size`** | Outer capsule width & height of the circular Search button. | `64.0` |
-| **`iconSize`** | Dimensions of the visual glyph / custom widget container. | `24.0` (closed) / `22.0` (expanded) |
-
-Specifying `iconSize` resizes only the glyph layout without altering the outer button geometry:
-
-```dart
-LiquidTabAction.search(
-  customIcon: SvgPicture.asset('assets/icons/search.svg'),
-  iconSize: 28.0, // 28×28 glyph layout inside the standard 64×64 circular capsule
-)
-```
-
----
+Search moves above the keyboard. Use the controller attached to the bar to call
+`controller.openSearch()` or `controller.closeSearch()`. Android back closes
+an active search before leaving the page. `customIcon` is also used in the
+expanded field; custom icons support `useThemeColor` like tab icons.
 
 ## Adaptive Folding
 
@@ -671,47 +343,24 @@ LiquidTabBar(
 
 ---
 
-## Controller
+## Controller, layout & accessibility
 
-Use `LiquidTabBarController` to coordinate folding, search, and performance monitoring programmatically:
+`LiquidTabBarScaffold` is the recommended layout: it enables `extendBody`,
+reserves scroll space, and observes primary vertical scrolling for folding.
+With a regular `Scaffold`, set `extendBody: true` and add
+`LiquidTabBar.reservedPadding(context)` to scrollable content. For slivers, use
+`SliverLiquidScrollPadding()`.
 
-| Capability | Methods & Properties |
-|:---|:---|
-| **Folding** | `minimize()`, `expand()`, `minimized` |
-| **Search** | `openSearch()`, `closeSearch({clearText})`, `isSearching` |
-| **Manual Scroll** | `handleScroll(notification, {allowNested})` |
-| **Performance** | `armGovernor()`, `isGovernorArmed`, `isDegraded` |
+For manual scroll handling, forward notifications to
+`LiquidTabBarController.handleScroll`. The controller also exposes
+`minimize()`, `expand()`, `openSearch()`, `closeSearch()`, and performance
+governor status. Selection remains app-owned via `selectedIndex` and
+`onSelected`.
 
-> [!NOTE]
-> Tab selection is owned by your Flutter state via `selectedIndex` and `onSelected`.
-
----
-
-## Scroll Padding
-
-Because `LiquidTabBar` floats above content, underlying scroll views must reserve bottom padding so the final items are not obscured:
-
-| Layout Architecture | Recommended Strategy |
-|:---|:---|
-| **`LiquidTabBarScaffold`** | **Automatic (Recommended)** — applies bottom padding and enables `extendBody: true`. |
-| **Standard `Scaffold`** | Wrap scrollable in `LiquidScrollPadding(child: ...)`. |
-| **Custom Box/List** | Set `padding: LiquidTabBar.reservedPadding(context)`. |
-| **`CustomScrollView` Slivers** | Append `const SliverLiquidScrollPadding()` as the trailing sliver. |
-
-If a `Scaffold` has `extendBody: true` but the scroll view lacks reserved padding, `LiquidTabBar` emits an actionable warning in debug mode. Silence it per bar with `warnOnMissingExtendBodyPadding: false`.
-
----
-
-## RTL & Bidirectionality
-
-`LiquidTabBar` automatically follows the app's ambient `Directionality`. RTL layouts (such as Arabic, Hebrew, and Persian) mirror tab ordering, gestures, and action placements with zero package-specific configuration.
-
----
-
-## Accessibility & Reduced Motion
-
-- **Screen Readers**: Exposes accessible `Semantics` for all tab items, active states, notification counts, search fields, and folded expand triggers.
-- **Reduced Motion**: Respects `MediaQuery.disableAnimationsOf(context)` by snapping spring simulations and search transitions to target values without delay or organic stretch.
+The bar follows ambient RTL directionality and provides screen-reader
+semantics. It respects `MediaQuery.disableAnimationsOf(context)` for reduced
+motion. `LiquidFoldedShape.circle` is the default; use `.oval` for an oval
+folded bar.
 
 ---
 
@@ -750,11 +399,25 @@ cd example
 flutter run
 ```
 
-## API cleanup migration
+## 2.0.0 migration
 
-The pre-release API cleanup removes a few no-op or duplicate options and
-narrows droplet shadow configuration to the fields the renderer supports. See
-the [API cleanup migration guide](doc/api_cleanup_migration.md) for examples.
+Version 2.0.0 consolidates the public API around the droplet navigation bar
+and removes obsolete or duplicate options. See the
+[migration guide](doc/api_cleanup_migration.md) for source changes.
+
+---
+
+## Credits
+
+Version 2.0.0 consolidates the package around the droplet navigation bar. The
+bar, scaffold, refraction shader, search, actions, badges, style objects, and
+Android Impeller backdrop fix were created by
+[Mohammed Hafiz](https://github.com/MohammedHafiz27)
+([#5](https://github.com/ahmedmarwan47-stack/orderbase_delivery_app/pull/5)).
+[Yousef Sobhy](https://github.com/yousefsobhy12)
+([#4](https://github.com/ahmedmarwan47-stack/orderbase_delivery_app/pull/4))
+contributed the fold-and-unfold lens fixes in 1.0.1. The package originated in
+the Orderbase courier app.
 
 ---
 
