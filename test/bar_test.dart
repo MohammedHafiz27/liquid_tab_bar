@@ -4181,7 +4181,7 @@ void main() {
     );
 
     testWidgets(
-      'Scenario 7: Quick tap B: pointerUp occurs before arrival; A remains committed during travel; B commits only after arrival/settle',
+      'Scenario 7: Quick tap B commits on release while the lens keeps traveling',
       (tester) async {
         int selectedIndex = 0;
         final calls = <int>[];
@@ -4209,10 +4209,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 20));
         await gesture.up();
 
+        // Selection is committed on release, while the lens is still moving.
+        expect(selectedIndex, equals(1));
+        expect(calls, equals([1]));
+
         // Mid-travel frame: 80ms into flight
         await tester.pump(const Duration(milliseconds: 80));
-        expect(selectedIndex, equals(0)); // Still Home!
-        expect(calls, isEmpty);
+        expect(selectedIndex, equals(1));
+        expect(calls, equals([1]));
 
         // Allow travel and liquid settle to complete
         await tester.pumpAndSettle();
@@ -4452,9 +4456,9 @@ void main() {
         // Pump through completion
         await tester.pumpAndSettle();
 
-        // Only Tab 2 commits; Tab 1 is never committed
+        // Each quick tap commits on release; old springs cannot emit again.
         expect(selectedIndex, equals(2));
-        expect(calls, equals([2]));
+        expect(calls, equals([1, 2]));
       },
     );
   });
@@ -4551,7 +4555,7 @@ void main() {
     );
 
     testWidgets(
-      'rapid taps: A -> tap B -> before settle tap C -> before settle tap D commits only D once',
+      'rapid taps commit each released target without stale callbacks',
       (tester) async {
         int callbackCount = 0;
         final selectedIndices = <int>[];
@@ -4579,22 +4583,22 @@ void main() {
         // Tap Search (1)
         await tester.tap(find.text('Search'), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 40));
-        expect(callbackCount, equals(0));
+        expect(callbackCount, equals(1));
 
         // Tap Orders (2) before Search settles
         await tester.tap(find.text('Orders'), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 40));
-        expect(callbackCount, equals(0));
+        expect(callbackCount, equals(2));
 
         // Tap Profile (3) before Orders settles
         await tester.tap(find.text('Profile'), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 40));
-        expect(callbackCount, equals(0));
+        expect(callbackCount, equals(3));
 
         // Let everything settle
         await tester.pumpAndSettle();
-        expect(callbackCount, equals(1));
-        expect(selectedIndices, equals([3]));
+        expect(callbackCount, equals(3));
+        expect(selectedIndices, equals([1, 2, 3]));
         expect(selectedIndex, equals(3));
       },
     );

@@ -149,6 +149,89 @@ void main() {
   }
 
   group('LiquidTabBar keyboard hit testing', () {
+    for (final drag in [false, true]) {
+      testWidgets(
+          '${drag ? 'drag' : 'held destination'} release settles visually before callback',
+          (tester) async {
+        await usePhoneSize(tester);
+        final key = GlobalKey<_KeyboardHarnessState>();
+        final calls = <int>[];
+        await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+        final restingHeight = tester.getRect(dropletFinder()).height;
+        final destination =
+            tester.getCenter(find.text(drag ? 'Profile' : 'Explore'));
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text(drag ? 'Home' : 'Explore')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+        if (drag) {
+          for (final label in ['Explore', 'Saved', 'Profile']) {
+            await gesture.moveTo(tester.getCenter(find.text(label)) +
+                Offset(label == 'Profile' ? 12 : 0, 0));
+            await tester.pump(const Duration(milliseconds: 55));
+            expect(calls, isEmpty);
+          }
+        }
+        expect(calls, isEmpty);
+        await gesture.up();
+        expect(calls, isEmpty);
+        var elapsedMs = 0;
+        var previousLens = tester.getRect(dropletFinder());
+        while (calls.isEmpty && elapsedMs < 1000) {
+          previousLens = tester.getRect(dropletFinder());
+          await tester.pump(const Duration(milliseconds: 4));
+          elapsedMs += 4;
+        }
+        debugPrint(
+            '${drag ? 'drag' : 'hold'} release callback: ${elapsedMs}ms');
+        final baselineMs = drag ? 284 : 264;
+        expect(
+            elapsedMs,
+            inInclusiveRange(
+                (baselineMs * 0.75).ceil(), (baselineMs * 0.8).floor()));
+        expect(calls, [drag ? 3 : 1]);
+        final lensAtCommit = tester.getRect(dropletFinder());
+        expect(lensAtCommit.center.dx, closeTo(destination.dx, 5));
+        expect(lensAtCommit.height, closeTo(restingHeight, 1.5));
+        expect((lensAtCommit.center.dx - previousLens.center.dx).abs(),
+            lessThan(0.3));
+        await tester.pumpAndSettle();
+        expect(calls, [drag ? 3 : 1]);
+        expect(tester.getRect(dropletFinder()).center.dx,
+            closeTo(destination.dx, 0.1));
+      });
+    }
+
+    testWidgets(
+        'centered drag release waits for a stopped expanded press to retract',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+      final restingHeight = tester.getRect(dropletFinder()).height;
+      final saved = tester.getCenter(find.text('Saved'));
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Home')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await gesture.moveTo(saved);
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(calls, isEmpty);
+      expect(tester.getRect(dropletFinder()).height,
+          greaterThan(restingHeight + 10));
+      await gesture.up();
+      expect(calls, isEmpty);
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(calls, isEmpty);
+      await tester.pumpAndSettle();
+      expect(calls, [2]);
+      expect(tester.getRect(dropletFinder()).center.dx, closeTo(saved.dx, 0.1));
+      expect(
+          tester.getRect(dropletFinder()).height, closeTo(restingHeight, 0.1));
+    });
+
     testWidgets('lifted tab bar remains inside the visible area above IME',
         (tester) async {
       await usePhoneSize(tester);
@@ -199,7 +282,7 @@ void main() {
     });
 
     testWidgets(
-        'quick tap defers one commit until travel settles with IME open',
+        'quick tap commits on release while travel continues with IME open',
         (tester) async {
       await usePhoneSize(tester);
       final key = GlobalKey<_KeyboardHarnessState>();
@@ -221,13 +304,16 @@ void main() {
       expect(key.currentState!.focusNode.hasFocus, isTrue);
 
       await gesture.up();
-      await tester.pump(const Duration(milliseconds: 16));
-      expect(key.currentState!.selectedIndex, 0);
-      expect(calls, isEmpty);
+      expect(key.currentState!.selectedIndex, 1);
+      expect(calls, equals([1]));
 
       await tester.pumpAndSettle();
       expect(key.currentState!.selectedIndex, 1);
       expect(calls, equals([1]));
+      expect(
+        tester.getRect(dropletFinder()).center.dx,
+        closeTo(tester.getCenter(find.text('Explore')).dx, 20),
+      );
     });
 
     testWidgets(
@@ -275,6 +361,180 @@ void main() {
       await tester.pumpAndSettle();
       expect(key.currentState!.selectedIndex, 2);
       expect(calls, equals([2]));
+      expect(
+        tester.getRect(dropletFinder()).center.dx,
+        closeTo(saved.dx, 20),
+      );
+    });
+
+    testWidgets('cancelled drag returns the lens to the selected tab',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      final home = tester.getCenter(find.text('Home'));
+      final gesture = await tester.startGesture(home);
+      await tester.pump(const Duration(milliseconds: 40));
+      await gesture.moveTo(tester.getCenter(find.text('Saved')));
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(calls, isEmpty);
+
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(calls, isEmpty);
+      expect(key.currentState!.selectedIndex, 0);
+      expect(tester.getRect(dropletFinder()).center.dx, closeTo(home.dx, 20));
+    });
+
+    testWidgets('repeated selection does not dispatch twice', (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      await tester.tap(find.text('Home'), warnIfMissed: false);
+      expect(calls, isEmpty);
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      await tester.pumpAndSettle();
+      expect(key.currentState!.selectedIndex, 1);
+      expect(tester.getRect(dropletFinder()).center.dx,
+          closeTo(tester.getCenter(find.text('Explore')).dx, 20));
+    });
+
+    testWidgets('rapid taps retarget the lens without a late callback',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      await tester.tap(find.text('Saved'), warnIfMissed: false);
+      expect(calls, equals([1, 2]));
+      await tester.pumpAndSettle();
+      expect(calls, equals([1, 2]));
+      expect(key.currentState!.selectedIndex, 2);
+      expect(tester.getRect(dropletFinder()).center.dx,
+          closeTo(tester.getCenter(find.text('Saved')).dx, 20));
+    });
+
+    testWidgets('new tap cancels an earlier drag release', (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Home')));
+      await tester.pump(const Duration(milliseconds: 40));
+      await gesture.moveTo(tester.getCenter(find.text('Profile')));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
+      expect(calls, isEmpty);
+
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      await tester.pumpAndSettle();
+      expect(calls, equals([1]));
+      expect(key.currentState!.selectedIndex, 1);
+      expect(tester.getRect(dropletFinder()).center.dx,
+          closeTo(tester.getCenter(find.text('Explore')).dx, 20));
+    });
+
+    testWidgets('empty-space interruption restores the selected lens',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      final home = tester.getCenter(find.text('Home'));
+      final explore = tester.getCenter(find.text('Explore'));
+      final gesture = await tester.startGesture(home);
+      await tester.pump(const Duration(milliseconds: 40));
+      await gesture.moveTo(tester.getCenter(find.text('Profile')));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
+      expect(calls, isEmpty);
+
+      final emptySpace = Offset((home.dx + explore.dx) / 2, home.dy);
+      final interruption = await tester.startGesture(emptySpace);
+      await tester.pump(const Duration(milliseconds: 20));
+      await interruption.up();
+      await tester.pumpAndSettle();
+      expect(calls, isEmpty);
+      expect(key.currentState!.selectedIndex, 0);
+      expect(tester.getRect(dropletFinder()).center.dx, closeTo(home.dx, 20));
+    });
+
+    testWidgets('cancel after an immediate tap restores its selected lens',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Home')));
+      await gesture.moveTo(tester.getCenter(find.text('Saved')));
+      await tester.pump(const Duration(milliseconds: 20));
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+
+      expect(calls, equals([1]));
+      expect(key.currentState!.selectedIndex, 1);
+      expect(tester.getRect(dropletFinder()).center.dx,
+          closeTo(tester.getCenter(find.text('Explore')).dx, 20));
+    });
+
+    testWidgets('cancel after interrupting a pending drag restores selection',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      final home = tester.getCenter(find.text('Home'));
+      final drag = await tester.startGesture(home);
+      await tester.pump(const Duration(milliseconds: 40));
+      await drag.moveTo(tester.getCenter(find.text('Profile')));
+      await tester.pump(const Duration(milliseconds: 16));
+      await drag.up();
+      expect(calls, isEmpty);
+
+      final interruption =
+          await tester.startGesture(tester.getCenter(find.text('Explore')));
+      await tester.pump(const Duration(milliseconds: 20));
+      await interruption.cancel();
+      await tester.pumpAndSettle();
+      expect(calls, isEmpty);
+      expect(key.currentState!.selectedIndex, 0);
+      expect(tester.getRect(dropletFinder()).center.dx, closeTo(home.dx, 20));
+    });
+
+    testWidgets('rapid reversal through a moving droplet ends at selection',
+        (tester) async {
+      await usePhoneSize(tester);
+      final key = GlobalKey<_KeyboardHarnessState>();
+      final calls = <int>[];
+      await pumpHarness(tester, key: key, keyboardHeight: 0, calls: calls);
+
+      await tester.tap(find.text('Explore'), warnIfMissed: false);
+      expect(calls, equals([1]));
+      await tester.tap(find.text('Home'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(calls, equals([1, 0]));
+      expect(key.currentState!.selectedIndex, 0);
+      expect(tester.getRect(dropletFinder()).center.dx,
+          closeTo(tester.getCenter(find.text('Home')).dx, 20));
     });
 
     testWidgets('current droplet press works and empty space stays inert',

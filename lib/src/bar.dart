@@ -108,6 +108,8 @@ class LiquidTabBar extends StatefulWidget {
 
   final List<LiquidTabItem> items;
   final int? selectedIndex;
+
+  /// Fires on release for a tap, or after the final lens settles for a hold or drag.
   final ValueChanged<int>? onSelected;
 
   /// Whether to warn in debug mode if [LiquidTabBar] is hosted in a [Scaffold] with
@@ -394,6 +396,7 @@ enum _ActivePointerKind {
 
 class _LiquidTabBarState extends State<LiquidTabBar>
     with TickerProviderStateMixin {
+  static const double _releaseSpringFrequency = 1.35;
   LiquidTabBarController get _nav =>
       widget.controller ?? LiquidTabBarController.shared;
   LiquidTabBarController? _listening;
@@ -434,6 +437,12 @@ class _LiquidTabBarState extends State<LiquidTabBar>
 
   /// Monotonic generation counter to invalidate stale animation/completion tasks.
   int _selectionGeneration = 0;
+
+  /// A selection dispatched before the parent rebuilds with its new index.
+  int? _selectionAwaitingParent;
+  int? get _selectedIndexForInteraction =>
+      _selectionAwaitingParent ?? widget.selectedIndex;
+  double? _lensTarget;
 
   /// Where the finger landed; null once it has lifted.
   Offset? _down;
@@ -482,7 +491,9 @@ class _LiquidTabBarState extends State<LiquidTabBar>
       final targetV = _travelTargetV ?? _pendingVisualSlot?.toDouble();
       if (targetV != null) {
         final dist = (_lens.value - targetV).abs();
-        final speed = _lensVelocity.abs();
+        // Retract at the same motion phase when release travel runs faster.
+        final speed = _lensVelocity.abs() /
+            (_releaseRequested ? _releaseSpringFrequency : 1.0);
         if (dist < 0.15 && speed < 1.5) {
           _isTraveling = false;
           _spring(_travelAnim, 0.0);
@@ -527,20 +538,26 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     final dist = (_lens.value - slot.toDouble()).abs();
     final speed = _lensVelocity.abs();
     final lensSettled = dist < 0.06 && (speed < 0.4 || !_lens.isAnimating);
-    final pressSettled = !_pressAnim.isAnimating ||
-        (_pressAnim.value.abs() < 0.06 && _pressAnim.velocity.abs() < 0.4);
-    final travelSettled = !_travelAnim.isAnimating ||
-        (_travelAnim.value.abs() < 0.06 && _travelAnim.velocity.abs() < 0.4);
+    final pressSettled = _pressAnim.value.abs() < 0.06 &&
+        (_pressAnim.velocity.abs() < 0.4 || !_pressAnim.isAnimating);
+    final travelSettled = _travelAnim.value.abs() < 0.06 &&
+        (_travelAnim.velocity.abs() < 0.4 || !_travelAnim.isAnimating);
     final liquidSettled = pressSettled && travelSettled;
 
     if (lensSettled && liquidSettled) {
       _pendingCommitVisualSlot = null;
       _releaseRequested = false;
       final originalIndex = _originalIndexFromInner(_indexAtVisual(slot));
-      if (originalIndex != widget.selectedIndex) {
-        widget.onSelected?.call(originalIndex);
-      }
+      _dispatchSelection(originalIndex);
     }
+  }
+
+  void _dispatchSelection(int index) {
+    if (index == _selectedIndexForInteraction) return;
+    final onSelected = widget.onSelected;
+    if (onSelected == null) return;
+    _selectionAwaitingParent = index;
+    onSelected(index);
   }
 
   /// The visual slot under the finger while scrubbing — a tick every time it
@@ -864,10 +881,19 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     if (!widget.shrinkOnScroll && _nav.minimized) {
       _nav.expand();
     }
-    if (old.selectedIndex != widget.selectedIndex && !_scrubbing) {
+    final selectedChanged = old.selectedIndex != widget.selectedIndex;
+    if (selectedChanged) {
+      _selectionAwaitingParent = null;
+      if (_releaseRequested) {
+        _releaseRequested = false;
+        _pendingCommitVisualSlot = null;
+        _selectionGeneration++;
+      }
+    }
+    if (selectedChanged && !_scrubbing) {
       final inner = _innerIndexFromOriginal(widget.selectedIndex);
       final v = inner == null ? null : _visualSlot(inner);
-      if (v != null) {
+      if (v != null && !(_lens.isAnimating && _lensTarget == v.toDouble())) {
         if ((_lens.value - v.toDouble()).abs() > 0.05) {
           _startTravelBulge(v.toDouble());
         }
@@ -911,6 +937,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
   /// it has — an interrupted fold reverses mid-air instead of snapping.
   void _spring(AnimationController c, double target, {double? velocity}) {
     if (!mounted) return;
+    if (c == _lens) _lensTarget = target;
     if (_reduced) {
       c.value = target;
       if (_releaseRequested && _pendingCommitVisualSlot != null) {
@@ -928,10 +955,23 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     final generation =
         (_springGenerations[c] = (_springGenerations[c] ?? 0) + 1);
     final selGen = _selectionGeneration;
+    final spring = _theme.spring;
+    // Raise release frequency at the same damping ratio; leave held/tap springs alone.
+    final settling = _releaseRequested &&
+        (c == _lens || c == _pressAnim || c == _travelAnim);
+    final effectiveSpring = settling
+        ? SpringDescription(
+            mass: spring.mass,
+            stiffness: spring.stiffness *
+                _releaseSpringFrequency *
+                _releaseSpringFrequency,
+            damping: spring.damping * _releaseSpringFrequency,
+          )
+        : spring;
     c
         .animateWith(
       SpringSimulation(
-        _theme.spring,
+        effectiveSpring,
         c.value,
         target,
         velocity ?? c.velocity,
@@ -2002,7 +2042,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
                   : item.label,
               onTap: () {
                 _nav.expand();
-                widget.onSelected?.call(originalIndex);
+                _dispatchSelection(originalIndex);
               },
               child: ExcludeSemantics(child: slot),
             ),
@@ -2206,7 +2246,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
   /// Identifies whether [localPosition] lands on a valid destination tab item
   /// (excluding the currently active selection or already-accepted destination).
   int? _destinationTabAt(_Geometry g, Rect rect, Offset localPosition) {
-    final currentInner = _innerIndexFromOriginal(widget.selectedIndex);
+    final currentInner = _innerIndexFromOriginal(_selectedIndexForInteraction);
     for (var i = 0; i < _n; i++) {
       if (i == currentInner || i == _destinationInnerIndex) continue;
       final v = _visualSlot(i);
@@ -2243,15 +2283,24 @@ class _LiquidTabBarState extends State<LiquidTabBar>
       behavior: HitTestBehavior.opaque,
       onPointerDown: (e) {
         if (!mounted || _activePointer != null) return;
+        final interruptedRelease = _releaseRequested;
+        _selectionGeneration++;
+        _releaseRequested = false;
+        _pendingCommitVisualSlot = null;
+        _pendingVisualSlot = null;
+        _hover = null;
         _activePointer = e.pointer;
-        if (folded) return;
+        if (folded) {
+          if (interruptedRelease) _returnLensToSelected();
+          return;
+        }
 
         // 1. Check if pointer hit the current visual droplet (Case A)
         final isDroplet =
             _currentDropletRect(g, rect, t).contains(e.localPosition);
         if (isDroplet) {
           _activePointerKind = _ActivePointerKind.dropletGrab;
-          _selectionGeneration++;
+          _stopLensForInteraction();
           _down = e.localPosition;
           _scrubbing = false;
           _fingerVelocity = 0;
@@ -2274,7 +2323,6 @@ class _LiquidTabBarState extends State<LiquidTabBar>
           _fingerVelocity = 0;
           _fingerAt = null;
           final v = _visualSlot(destInner)!;
-          _selectionGeneration++;
           _pendingVisualSlot = v;
           _pendingCommitVisualSlot = v;
           _travelTargetV = v.toDouble();
@@ -2284,7 +2332,6 @@ class _LiquidTabBarState extends State<LiquidTabBar>
           }
           _spring(_lens, v.toDouble());
           _spring(_pressAnim, 1.0);
-          // NOTE: widget.onSelected is deferred until the droplet visually settles after release.
           setState(() {});
           return;
         }
@@ -2292,6 +2339,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         // 3. Pointer hit empty navigation-bar space (Case C)
         _activePointerKind = _ActivePointerKind.emptySpace;
         _down = e.localPosition;
+        if (interruptedRelease) _returnLensToSelected();
       },
       onPointerMove: (e) {
         if (!mounted ||
@@ -2331,6 +2379,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
         _down = null;
 
         final kind = _activePointerKind;
+        final destinationInnerIndex = _destinationInnerIndex;
         _activePointerKind = _ActivePointerKind.none;
         _destinationInnerIndex = null;
 
@@ -2338,8 +2387,25 @@ class _LiquidTabBarState extends State<LiquidTabBar>
           return;
         }
 
+        if (kind == _ActivePointerKind.destinationTab && !_scrubbing) {
+          _pendingCommitVisualSlot = null;
+          _releaseRequested = false;
+          _hover = null;
+          _spring(_pressAnim, 0.0);
+          if (destinationInnerIndex != null && destinationInnerIndex < _n) {
+            _dispatchSelection(destinationInnerIndex);
+          } else {
+            _cancel();
+          }
+          return;
+        }
+
         _releaseRequested = true;
         final curGen = _selectionGeneration;
+        _spring(_pressAnim, 0.0);
+        if (!_isTraveling && _travelAnim.isAnimating) {
+          _spring(_travelAnim, 0.0);
+        }
 
         if (_scrubbing) {
           final carried = _lensVelocity;
@@ -2352,11 +2418,15 @@ class _LiquidTabBarState extends State<LiquidTabBar>
             _startTravelBulge(finalSlot.toDouble());
           }
           _spring(_lens, finalSlot.toDouble(), velocity: carried);
-          _spring(_pressAnim, 0.0);
           _checkCommit(curGen);
         } else {
-          // Destination tab or current droplet released
-          _spring(_pressAnim, 0.0);
+          final target = _pendingCommitVisualSlot?.toDouble();
+          if (target != null) {
+            if ((_lens.value - target).abs() > 0.05) {
+              _startTravelBulge(target);
+            }
+            _spring(_lens, target);
+          }
           _checkCommit(curGen);
         }
       },
@@ -2395,7 +2465,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     return listener;
   }
 
-  /// The finger left without choosing: the lens goes home.
+  /// The finger left without choosing: the lens returns to the selected tab.
   void _cancel() {
     _activePointer = null;
     _activePointerKind = _ActivePointerKind.none;
@@ -2404,7 +2474,11 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     _pendingVisualSlot = null;
     _releaseRequested = false;
     _selectionGeneration++;
-    final v = _visualSlot(widget.selectedIndex);
+    _returnLensToSelected();
+  }
+
+  void _returnLensToSelected() {
+    final v = _visualSlot(_selectedIndexForInteraction);
     if (v != null) {
       if ((_lens.value - v.toDouble()).abs() > 0.05) {
         _startTravelBulge(v.toDouble());
@@ -2452,7 +2526,7 @@ class _LiquidTabBarState extends State<LiquidTabBar>
     } else {
       _fingerAt = timeStamp;
     }
-    _lens.stop();
+    _stopLensForInteraction();
     _lens.value = target;
     if (_reduced) {
       _relax.value = 1;
@@ -2465,6 +2539,13 @@ class _LiquidTabBarState extends State<LiquidTabBar>
   /// scrubbing (fading as [_relax] runs), the lens's own otherwise.
   double get _lensVelocity =>
       _scrubbing ? _fingerVelocity * (1 - _relax.value) : _lens.velocity;
+
+  void _stopLensForInteraction() {
+    if (!_lens.isAnimating) return;
+    _springGenerations[_lens] = (_springGenerations[_lens] ?? 0) + 1;
+    _lens.stop();
+    _lensTarget = null;
+  }
 
   void _release() {
     _activePointer = null;

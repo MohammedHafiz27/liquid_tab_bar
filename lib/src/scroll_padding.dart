@@ -98,16 +98,15 @@ class LiquidScrollPadding extends StatelessWidget {
     if (updateMediaQuery) {
       final mq = MediaQuery.of(context);
       final currentBottom = mq.padding.bottom;
-      if (currentBottom < reserved) {
-        result = MediaQuery(
-          data: mq.copyWith(
-            padding: mq.padding.copyWith(
-              bottom: math.max(currentBottom, reserved),
-            ),
+      // Keep the body ancestry stable when keyboard/layout padding changes.
+      result = MediaQuery(
+        data: mq.copyWith(
+          padding: mq.padding.copyWith(
+            bottom: math.max(currentBottom, reserved),
           ),
-          child: result,
-        );
-      }
+        ),
+        child: result,
+      );
     }
 
     return LiquidScrollPaddingScope(reservedHeight: reserved, child: result);
